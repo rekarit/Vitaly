@@ -633,8 +633,27 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: context.colors.error, foregroundColor: Colors.white),
             onPressed: () async {
               Navigator.pop(ctx);
-              await AuthService.instance.deleteUser(u.id);
-              setState(() {});
+              final success = await AuthService.instance.deleteUser(u.id);
+              if (mounted) {
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('User "${u.username}" was deleted successfully.'),
+                      backgroundColor: Colors.green.shade700,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Cannot delete user "${u.username}". Super Admin account is protected.'),
+                      backgroundColor: Colors.red.shade700,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+                setState(() {});
+              }
             },
             child: const Text('Delete'),
           ),

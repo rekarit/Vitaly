@@ -11,6 +11,7 @@ class AuthService extends ChangeNotifier {
   static const String _keyUsers = 'vitaly_users_v1';
   static const String _keyCurrentUser = 'vitaly_current_user_v1';
   static const String _keyActivityLogs = 'vitaly_activity_logs_v1';
+  static const String _keyDeletedUsers = 'vitaly_deleted_users_v2';
 
   // Default credentials requested by user:
   static const String defaultSuperAdminUsername = 'SuperAdminVitaly';
@@ -22,16 +23,22 @@ class AuthService extends ChangeNotifier {
   AppUser? _currentUser;
   final List<AppUser> _users = [];
   final List<UserActivityLog> _logs = [];
+  final Set<String> _deletedUsernames = {};
   bool _isSyncing = false;
 
   AppUser? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null;
   bool get isSuperAdmin => _currentUser?.isSuperAdmin ?? false;
   bool get isSyncing => _isSyncing;
-  /// Filtered users list: hidden testing accounts (e.g., RekarF) are completely invisible in UI lists!
-  List<AppUser> get users => List.unmodifiable(_users.where((u) => !u.isHidden));
+  Set<String> get deletedUsernames => Set.unmodifiable(_deletedUsernames);
 
-  List<Map<String, dynamic>> allUsersRaw() => _users.map((u) => u.toJson()).toList();
+  /// Filtered users list: hidden testing accounts (e.g., RekarF) are completely invisible in UI lists!
+  List<AppUser> get users => List.unmodifiable(_users.where((u) => !u.isHidden && !_deletedUsernames.contains(u.username.toLowerCase())));
+
+  List<Map<String, dynamic>> allUsersRaw() => _users
+      .where((u) => !_deletedUsernames.contains(u.username.toLowerCase()))
+      .map((u) => u.toJson())
+      .toList();
 
   List<UserActivityLog> get logs => List.unmodifiable(_logs);
 
@@ -40,6 +47,11 @@ class AuthService extends ChangeNotifier {
 
   Future<void> initialize() async {
     final prefs = await SharedPreferences.getInstance();
+
+    final deletedRaw = prefs.getStringList(_keyDeletedUsers);
+    if (deletedRaw != null) {
+      _deletedUsernames.addAll(deletedRaw.map((e) => e.toLowerCase()));
+    }
 
     // 1. Fetch latest remote users and logs from InsForge cloud FIRST!
     await syncFromCloud();
@@ -132,10 +144,24 @@ class AuthService extends ChangeNotifier {
       // 1. Try Global Distributed Cloud Sync (100% uptime worldwide)
       try {
         final cloudDb = await CloudSyncService.pullDatabase();
-        if (cloudDb != null && cloudDb['users'] is List) {
-          final list = cloudDb['users'] as List;
-          if (list.isNotEmpty) {
-            remoteUsers = list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        if (cloudDb != null) {
+          if (cloudDb['deleted_users'] is List) {
+            final remoteDeleted = (cloudDb['deleted_users'] as List)
+                .map((e) => e.toString().toLowerCase())
+                .where((e) => e.isNotEmpty);
+            _deletedUsernames.addAll(remoteDeleted);
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setStringList(_keyDeletedUsers, _deletedUsernames.toList());
+          }
+
+          if (cloudDb['users'] is List) {
+            final list = cloudDb['users'] as List;
+            if (list.isNotEmpty) {
+              remoteUsers = list
+                  .map((e) => Map<String, dynamic>.from(e as Map))
+                  .where((e) => !_deletedUsernames.contains(e['username']?.toString().toLowerCase()))
+                  .toList();
+            }
           }
         }
       } catch (e) {
@@ -150,17 +176,21 @@ class AuthService extends ChangeNotifier {
       if (remoteUsers != null && remoteUsers.isNotEmpty) {
         // Merge remote users with any locally created users so nothing is lost!
         final cleanUsers = remoteUsers
+            .where((item) => !_deletedUsernames.contains(item['username']?.toString().toLowerCase()))
             .map((item) => AppUser.fromJson(item))
             .toList();
 
         final Map<String, AppUser> mergedMap = {};
         for (final u in cleanUsers) {
-          mergedMap[u.username.toLowerCase()] = u;
+          if (!_deletedUsernames.contains(u.username.toLowerCase())) {
+            mergedMap[u.username.toLowerCase()] = u;
+          }
         }
         for (final u in _users) {
-          // If local has a user not in cloud, keep it
-          if (!mergedMap.containsKey(u.username.toLowerCase())) {
-            mergedMap[u.username.toLowerCase()] = u;
+          // If local has a user not in cloud and not deleted, keep it
+          final uName = u.username.toLowerCase();
+          if (!_deletedUsernames.contains(uName) && !mergedMap.containsKey(uName)) {
+            mergedMap[uName] = u;
           }
         }
 
@@ -319,6 +349,13 @@ class AuthService extends ChangeNotifier {
       return false; // username already taken
     }
 
+    // Un-tombstone if previously deleted
+    _deletedUsernames.remove(clean.toLowerCase());
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_keyDeletedUsers, _deletedUsernames.toList());
+    } catch (_) {}
+
     final newUser = AppUser(
       id: 'usr_${DateTime.now().millisecondsSinceEpoch}',
       username: clean,
@@ -379,7 +416,17 @@ class AuthService extends ChangeNotifier {
       return false;
     }
 
-    _users.removeWhere((u) => u.id == userId);
+    final targetUsername = target.username.toLowerCase();
+    _deletedUsernames.add(targetUsername);
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_keyDeletedUsers, _deletedUsernames.toList());
+    } catch (e) {
+      debugPrint('Error saving deleted usernames list: $e');
+    }
+
+    _users.removeWhere((u) => u.id == userId || u.username.toLowerCase() == targetUsername);
     await _saveUsers();
 
     await logActivity(
@@ -480,23 +527,41 @@ class AuthService extends ChangeNotifier {
 
   Future<void> _pushUsersToCloud() async {
     try {
-      final data = _users.map((u) => u.toJson()).toList();
+      final data = _users
+          .where((u) => !_deletedUsernames.contains(u.username.toLowerCase()))
+          .map((u) => u.toJson())
+          .toList();
       // Push to InsForge
       unawaited(InsforgeService.syncUsersToCloud(data));
 
       // Push to Global Cloud Sync (GitHub distributed BaaS) with automatic two-way union merge
       final cloudDb = await CloudSyncService.pullDatabase() ?? {};
+
+      // Pull remote deleted users if any
+      final remoteDeleted = (cloudDb['deleted_users'] as List?)
+              ?.map((e) => e.toString().toLowerCase())
+              .where((e) => e.isNotEmpty)
+              .toList() ??
+          [];
+      _deletedUsernames.addAll(remoteDeleted);
+
       final remoteList = (cloudDb['users'] as List?)?.map((e) => Map<String, dynamic>.from(e as Map)).toList() ?? [];
       final Map<String, Map<String, dynamic>> userMap = {};
       for (final u in remoteList) {
         final uname = u['username']?.toString().toLowerCase() ?? '';
-        if (uname.isNotEmpty) userMap[uname] = u;
+        if (uname.isNotEmpty && !_deletedUsernames.contains(uname)) {
+          userMap[uname] = u;
+        }
       }
       for (final u in data) {
         final uname = u['username']?.toString().toLowerCase() ?? '';
-        if (uname.isNotEmpty) userMap[uname] = u;
+        if (uname.isNotEmpty && !_deletedUsernames.contains(uname)) {
+          userMap[uname] = u;
+        }
       }
       cloudDb['users'] = userMap.values.toList();
+      cloudDb['deleted_users'] = _deletedUsernames.toList();
+
       final success = await CloudSyncService.pushDatabase(cloudDb);
       debugPrint('AuthService._pushUsersToCloud result: $success, total synced users: ${cloudDb['users'].length}');
     } catch (e) {

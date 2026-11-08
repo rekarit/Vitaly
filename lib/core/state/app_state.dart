@@ -362,22 +362,28 @@ class AppState extends ChangeNotifier {
     try {
       final cloudDb = await CloudSyncService.pullDatabase() ?? {};
 
-      // Union-merge users so we never overwrite mobile-created users:
+      // Union-merge users so we never overwrite mobile-created users, while honoring deleted users:
+      final deletedUsers = AuthService.instance.deletedUsernames;
       final remoteUsers = (cloudDb['users'] as List?)?.map((e) => Map<String, dynamic>.from(e as Map)).toList() ?? [];
       final Map<String, Map<String, dynamic>> userMap = {};
       for (final u in remoteUsers) {
         final uname = u['username']?.toString().toLowerCase() ?? '';
-        if (uname.isNotEmpty) userMap[uname] = u;
+        if (uname.isNotEmpty && !deletedUsers.contains(uname)) {
+          userMap[uname] = u;
+        }
       }
       for (final u in AuthService.instance.allUsersRaw()) {
         final uname = u['username']?.toString().toLowerCase() ?? '';
-        if (uname.isNotEmpty) userMap[uname] = u;
+        if (uname.isNotEmpty && !deletedUsers.contains(uname)) {
+          userMap[uname] = u;
+        }
       }
 
       final payload = {
         'version': 2,
         'updated_at': DateTime.now().toIso8601String(),
         'users': userMap.values.toList(),
+        'deleted_users': deletedUsers.toList(),
         'categories': categoryModels.map((c) => {
           'categoryCode': c.categoryCode,
           'categoryName': c.categoryName,
