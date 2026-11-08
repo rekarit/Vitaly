@@ -523,13 +523,15 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
           Text('No return records found', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: colors.textPrimary)),
           const SizedBox(height: 6),
           Text('Process sales returns, exchange slabs, or restock inventory.', style: GoogleFonts.inter(fontSize: 13, color: colors.textSecondary)),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () => _openReturnForm(),
-            icon: const Icon(Icons.add_rounded, size: 16),
-            label: Text('Record Return', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF9800), foregroundColor: Colors.white),
-          ),
+          if (AuthService.instance.currentPermissions.canCreateReturn) ...[
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => _openReturnForm(),
+              icon: const Icon(Icons.add_rounded, size: 16),
+              label: Text('Record Return', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF9800), foregroundColor: Colors.white),
+            ),
+          ],
         ],
       ),
     );

@@ -712,21 +712,22 @@ class _PrintLabelsScreenState extends State<PrintLabelsScreen> {
                   ),
                 ],
               ),
-              const SizedBox(width: 16),
-
-              // Direct Print Button
-              ElevatedButton.icon(
-                onPressed: () => _openPrintDialog(slabsToPrint: [slab]),
-                icon: const Icon(Icons.print_rounded, size: 14),
-                label: Text('Print Tag', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                  elevation: 0,
+              // Direct Print Button (Permission Guarded)
+              if (AuthService.instance.currentPermissions.canPrintSingleLabel) ...[
+                const SizedBox(width: 16),
+                ElevatedButton.icon(
+                  onPressed: () => _openPrintDialog(slabsToPrint: [slab]),
+                  icon: const Icon(Icons.print_rounded, size: 14),
+                  label: Text('Print Tag', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    elevation: 0,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         );
@@ -916,29 +917,30 @@ class _LabelPreviewGridCard extends StatelessWidget {
             ),
           ),
 
-          // Print Tag Button matching screenshot gold/amber color
-          Positioned(
-            bottom: 12,
-            left: 12,
-            right: 12,
-            child: SizedBox(
-              height: 38,
-              child: ElevatedButton.icon(
-                onPressed: onPrint,
-                icon: const Icon(Icons.print_rounded, size: 16),
-                label: Text(
-                  'Print Tag',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          // Print Tag Button matching screenshot gold/amber color (Permission Guarded)
+          if (AuthService.instance.currentPermissions.canPrintSingleLabel)
+            Positioned(
+              bottom: 12,
+              left: 12,
+              right: 12,
+              child: SizedBox(
+                height: 38,
+                child: ElevatedButton.icon(
+                  onPressed: onPrint,
+                  icon: const Icon(Icons.print_rounded, size: 16),
+                  label: Text(
+                    'Print Tag',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );

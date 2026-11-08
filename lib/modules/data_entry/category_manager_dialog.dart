@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/models/category_model.dart';
+import '../../core/services/auth_service.dart';
 import '../../core/state/app_state.dart';
 import '../../core/state/app_state_scope.dart';
 import '../../core/theme/app_theme.dart';
@@ -107,25 +108,26 @@ class _CategoryManagerDialogState extends State<CategoryManagerDialog> {
                       ],
                     ),
                   ),
-                  // New Category Button
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colors.primary,
-                      foregroundColor: isDark ? const Color(0xFF111418) : Colors.white,
-                      padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 14, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      elevation: 0,
+                  // New Category Button (Permission Guarded)
+                  if (AuthService.instance.currentPermissions.canAddCategory)
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.primary,
+                        foregroundColor: isDark ? const Color(0xFF111418) : Colors.white,
+                        padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 14, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        elevation: 0,
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        widget.onAddNewCategory();
+                      },
+                      icon: const Icon(Icons.add_rounded, size: 16),
+                      label: Text(
+                        isMobile ? 'Add' : 'Add Category',
+                        style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600),
+                      ),
                     ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      widget.onAddNewCategory();
-                    },
-                    icon: const Icon(Icons.add_rounded, size: 16),
-                    label: Text(
-                      isMobile ? 'Add' : 'Add Category',
-                      style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600),
-                    ),
-                  ),
                   const SizedBox(width: 6),
                   IconButton(
                     icon: Icon(Icons.close_rounded, color: colors.textSecondary),
@@ -289,24 +291,26 @@ class _CategoryManagerDialogState extends State<CategoryManagerDialog> {
                                   ),
                                 ),
 
-                                // Actions: Edit & Delete
+                                // Actions: Edit & Delete (Permission Guarded)
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     // Edit Button
-                                    IconButton(
-                                      icon: Icon(Icons.edit_outlined, size: 18, color: colors.textSecondary),
-                                      tooltip: 'Edit Category Name',
-                                      splashRadius: 18,
-                                      onPressed: () => _openEditDialog(context, cat, appState, colors, isDark),
-                                    ),
+                                    if (AuthService.instance.currentPermissions.canManageCategories)
+                                      IconButton(
+                                        icon: Icon(Icons.edit_outlined, size: 18, color: colors.textSecondary),
+                                        tooltip: 'Edit Category Name',
+                                        splashRadius: 18,
+                                        onPressed: () => _openEditDialog(context, cat, appState, colors, isDark),
+                                      ),
                                     // Delete Button
-                                    IconButton(
-                                      icon: Icon(Icons.delete_outline_rounded, size: 19, color: colors.error),
-                                      tooltip: 'Delete Category',
-                                      splashRadius: 18,
-                                      onPressed: () => _handleDeleteCategory(context, cat, mats.length, slabsCount, appState, colors, isDark),
-                                    ),
+                                    if (AuthService.instance.currentPermissions.canManageCategories)
+                                      IconButton(
+                                        icon: Icon(Icons.delete_outline_rounded, size: 19, color: colors.error),
+                                        tooltip: 'Delete Category',
+                                        splashRadius: 18,
+                                        onPressed: () => _handleDeleteCategory(context, cat, mats.length, slabsCount, appState, colors, isDark),
+                                      ),
                                   ],
                                 ),
                               ],

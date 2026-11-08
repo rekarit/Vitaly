@@ -20,6 +20,7 @@ import 'data_entry_filter_dialog.dart';
 import 'category_manager_dialog.dart';
 import 'material_manager_dialog.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/widgets/stone_image_widget.dart';
 
 class DataEntryScreen extends StatefulWidget {
   const DataEntryScreen({super.key});
@@ -160,7 +161,42 @@ class DataEntryScreenState extends State<DataEntryScreen> {
   // CategoryName is editable.
   // RBAC permissions are now handled via user roles/permissions directly
   Future<void> _requirePermission(VoidCallback onAuthorized, {String actionTitle = ''}) async {
+    final perms = AuthService.instance.currentPermissions;
+    if (actionTitle == 'New Material' && !perms.canAddMaterial) {
+      _showPermissionDeniedDialog('You do not have permission to add new materials.');
+      return;
+    }
+    if (actionTitle == 'New Category' && !perms.canAddCategory) {
+      _showPermissionDeniedDialog('You do not have permission to add new categories.');
+      return;
+    }
+    if (actionTitle == 'Material Manager' && (!perms.canManageCategories && !perms.canAddMaterial && !perms.canEditMaterial && !perms.canDeleteMaterial)) {
+      _showPermissionDeniedDialog('You do not have permission to access Material Manager.');
+      return;
+    }
+    if (actionTitle == 'Category Manager' && !perms.canManageCategories) {
+      _showPermissionDeniedDialog('You do not have permission to access Category Manager.');
+      return;
+    }
     onAuthorized();
+  }
+
+  void _showPermissionDeniedDialog(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.lock_outline_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(child: Text(message, style: const TextStyle(fontWeight: FontWeight.w600))),
+          ],
+        ),
+        backgroundColor: Colors.redAccent.shade700,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
   }
 
   void _openCategoriesFormDialog() {
@@ -988,44 +1024,49 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.add_rounded, size: 16),
-                      label: const Text('New Material', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colors.primary,
-                        foregroundColor: primaryBtnTextColor,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        elevation: 0,
+              if (AuthService.instance.currentPermissions.canAddMaterial || AuthService.instance.currentPermissions.canManageCategories || AuthService.instance.currentPermissions.canEditMaterial) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    if (AuthService.instance.currentPermissions.canAddMaterial)
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.add_rounded, size: 16),
+                          label: const Text('New Material', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colors.primary,
+                            foregroundColor: primaryBtnTextColor,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            elevation: 0,
+                          ),
+                          onPressed: () => _requirePermission(() => _openMaterialFormDialog(cat), actionTitle: 'New Material'),
+                        ),
                       ),
-                      onPressed: () => _requirePermission(() => _openMaterialFormDialog(cat), actionTitle: 'New Material'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.tune_rounded, size: 16),
-                    label: const Text('Manager', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: colors.textPrimary,
-                      side: BorderSide(color: colors.border),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    onPressed: () => _requirePermission(
-                      () => MaterialManagerDialog.show(
-                        context,
-                        category: cat,
-                        onAddNewMaterial: () => _requirePermission(() => _openMaterialFormDialog(cat), actionTitle: 'New Material'),
+                    if (AuthService.instance.currentPermissions.canManageCategories || AuthService.instance.currentPermissions.canEditMaterial) ...[
+                      if (AuthService.instance.currentPermissions.canAddMaterial) const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.tune_rounded, size: 16),
+                        label: const Text('Manager', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: colors.textPrimary,
+                          side: BorderSide(color: colors.border),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        onPressed: () => _requirePermission(
+                          () => MaterialManagerDialog.show(
+                            context,
+                            category: cat,
+                            onAddNewMaterial: () => _requirePermission(() => _openMaterialFormDialog(cat), actionTitle: 'New Material'),
+                          ),
+                          actionTitle: 'Material Manager',
+                        ),
                       ),
-                      actionTitle: 'Material Manager',
-                    ),
-                  ),
-                ],
-              ),
+                    ],
+                  ],
+                ),
+              ],
             ] else ...[
               Wrap(
                 spacing: 16,
@@ -1176,7 +1217,13 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                               border: Border.all(color: colors.border),
                             ),
                             clipBehavior: Clip.antiAlias,
-                            child: _buildMaterialFallbackThumbnail(mat, colors),
+                            child: StoneImageWidget(
+                              material: mat,
+                              width: 44,
+                              height: 44,
+                              fit: BoxFit.cover,
+                              enablePreviewOnTap: true,
+                            ),
                           ),
                           const SizedBox(width: 16),
                         Expanded(
@@ -1657,32 +1704,10 @@ class DataEntryScreenState extends State<DataEntryScreen> {
   }
 
   Widget _buildMaterialFallbackThumbnail(MaterialItem mat, AppColorsExtension colors) {
-    if (mat.imageBytes != null) {
-      return Image.memory(mat.imageBytes!, fit: BoxFit.cover);
-    }
-    if (mat.imageUrl != null && mat.imageUrl!.isNotEmpty) {
-      return Image.network(
-        mat.imageUrl!,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Icon(Icons.terrain_rounded, size: 22, color: colors.primary),
-      );
-    }
-    return Icon(Icons.terrain_rounded, size: 22, color: colors.primary);
-  }
-
-  Widget _buildStoneTextureFallback(AppColorsExtension colors) {
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surfaceVariant,
-        gradient: LinearGradient(
-          colors: [colors.surfaceVariant, colors.primary.withValues(alpha: 0.1)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Center(
-        child: Icon(Icons.terrain_rounded, size: 48, color: colors.primary.withValues(alpha: 0.5)),
-      ),
+    return StoneImageWidget(
+      material: mat,
+      fit: BoxFit.cover,
+      enablePreviewOnTap: true,
     );
   }
 
@@ -2036,7 +2061,7 @@ class DataEntryScreenState extends State<DataEntryScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Master Stone Image Banner
+                  // Master Stone Image Banner with tap-to-preview
                   if (mat.imageBytes != null || (mat.imageUrl != null && mat.imageUrl!.isNotEmpty))
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16),
@@ -2046,13 +2071,13 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                           height: isMobile ? 140 : 180,
                           width: double.infinity,
                           color: colors.surfaceVariant,
-                          child: mat.imageBytes != null
-                              ? Image.memory(mat.imageBytes!, fit: BoxFit.cover)
-                              : Image.network(
-                                  mat.imageUrl!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => _buildStoneTextureFallback(colors),
-                                ),
+                          child: StoneImageWidget(
+                            material: mat,
+                            height: isMobile ? 140 : 180,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            enablePreviewOnTap: true,
+                          ),
                         ),
                       ),
                     ),
@@ -2413,48 +2438,49 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                               ),
                             ),
                           ),
-                          // Delete Button
-                          OutlinedButton.icon(
-                            icon: Icon(Icons.delete_outline, size: 16, color: colors.error),
-                            label: Text('Delete', style: TextStyle(color: colors.error, fontWeight: FontWeight.bold, fontSize: 13)),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: colors.error.withValues(alpha: 0.4)),
-                              backgroundColor: colors.error.withValues(alpha: 0.08),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                            ),
-                            onPressed: () async {
-                              final confirm = await showDialog<bool>(
-                                context: context,
-                                builder: (c) => AlertDialog(
-                                  backgroundColor: colors.surface,
-                                  title: Text('Delete Slab', style: TextStyle(color: colors.textPrimary)),
-                                  content: Text(
-                                    'Are you sure you want to delete slab "${currentSlab.slabNo}"?',
-                                    style: TextStyle(color: colors.textSecondary),
+                          // Delete Button (Permission Guarded)
+                          if (AuthService.instance.currentPermissions.canDeleteSlab)
+                            OutlinedButton.icon(
+                              icon: Icon(Icons.delete_outline, size: 16, color: colors.error),
+                              label: Text('Delete', style: TextStyle(color: colors.error, fontWeight: FontWeight.bold, fontSize: 13)),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: colors.error.withValues(alpha: 0.4)),
+                                backgroundColor: colors.error.withValues(alpha: 0.08),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                              ),
+                              onPressed: () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (c) => AlertDialog(
+                                    backgroundColor: colors.surface,
+                                    title: Text('Delete Slab', style: TextStyle(color: colors.textPrimary)),
+                                    content: Text(
+                                      'Are you sure you want to delete slab "${currentSlab.slabNo}"?',
+                                      style: TextStyle(color: colors.textSecondary),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(c, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(backgroundColor: colors.error),
+                                        onPressed: () => Navigator.pop(c, true),
+                                        child: const Text('Delete', style: TextStyle(color: Colors.white)),
+                                      ),
+                                    ],
                                   ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(c, false),
-                                      child: const Text('Cancel'),
-                                    ),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(backgroundColor: colors.error),
-                                      onPressed: () => Navigator.pop(c, true),
-                                      child: const Text('Delete', style: TextStyle(color: Colors.white)),
-                                    ),
-                                  ],
-                                ),
-                              );
-                              if (confirm == true && mounted) {
-                                final appState = AppStateScope.read(context);
-                                appState.deleteSlab(currentSlab.id);
-                                if (ctx.mounted) {
-                                  Navigator.pop(ctx);
+                                );
+                                if (confirm == true && mounted) {
+                                  final appState = AppStateScope.read(context);
+                                  appState.deleteSlab(currentSlab.id);
+                                  if (ctx.mounted) {
+                                    Navigator.pop(ctx);
+                                  }
                                 }
-                              }
-                            },
-                          ),
+                              },
+                            ),
                           const SizedBox(width: 8),
                           // Close button
                           IconButton(
@@ -2471,37 +2497,39 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       child: Row(
                         children: [
-                          // Edit Button
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () async {
-                                final updated = await SlabFormDialog.show(
-                                  context,
-                                  mat,
-                                  initialSlab: currentSlab,
-                                );
-                                if (updated != null) {
-                                  setDialogState(() {});
-                                }
-                              },
-                              icon: Icon(Icons.edit_outlined, size: 16, color: colors.primary),
-                              label: Text(
-                                'Edit',
-                                style: GoogleFonts.inter(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: colors.textPrimary,
+                          // Edit Button (Permission Guarded)
+                          if (AuthService.instance.currentPermissions.canEditSlab) ...[
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () async {
+                                  final updated = await SlabFormDialog.show(
+                                    context,
+                                    mat,
+                                    initialSlab: currentSlab,
+                                  );
+                                  if (updated != null) {
+                                    setDialogState(() {});
+                                  }
+                                },
+                                icon: Icon(Icons.edit_outlined, size: 16, color: colors.primary),
+                                label: Text(
+                                  'Edit',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: colors.textPrimary,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(color: colors.border),
+                                  backgroundColor: isDark ? const Color(0xFF22252B) : const Color(0xFFF8F9FA),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                 ),
                               ),
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(color: colors.border),
-                                backgroundColor: isDark ? const Color(0xFF22252B) : const Color(0xFFF8F9FA),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
+                            const SizedBox(width: 12),
+                          ],
                           // Copy SlabNo Button
                           Expanded(
                             child: OutlinedButton.icon(

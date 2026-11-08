@@ -12,6 +12,7 @@ import '../../core/state/app_state.dart';
 import '../../core/state/app_state_scope.dart';
 import '../sales/sales_screen.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/widgets/stone_image_widget.dart';
 
 // ── RESERVATIONS SCREEN (RESERVATION LIST) ──────────────────────────────────
 class ReservationsScreen extends StatefulWidget {
@@ -734,10 +735,10 @@ class _ReservationGridCard extends StatelessWidget {
                     ],
                   ),
 
-                  // Actions: Sell, Edit and Cancel
+                  // Actions: Sell, Edit and Cancel (Permission Guarded)
                   Row(
                     children: [
-                      if (res.status == ReservationStatus.active) ...[
+                      if (res.status == ReservationStatus.active && AuthService.instance.currentPermissions.canConvertReservationToSale) ...[
                         Expanded(
                           child: ElevatedButton.icon(
                             onPressed: onSell,
@@ -754,20 +755,22 @@ class _ReservationGridCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                       ],
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: onEdit,
-                          icon: const Icon(Icons.edit_outlined, size: 14),
-                          label: Text('Edit', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: colors.primary,
-                            side: BorderSide(color: colors.primary.withAlpha(120)),
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      if (AuthService.instance.currentPermissions.canCreateReservation) ...[
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: onEdit,
+                            icon: const Icon(Icons.edit_outlined, size: 14),
+                            label: Text('Edit', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: colors.primary,
+                              side: BorderSide(color: colors.primary.withAlpha(120)),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                            ),
                           ),
                         ),
-                      ),
-                      if (res.status == ReservationStatus.active) ...[
+                      ],
+                      if (res.status == ReservationStatus.active && AuthService.instance.currentPermissions.canCancelReservation) ...[
                         const SizedBox(width: 8),
                         OutlinedButton(
                           onPressed: onCancel,
@@ -934,7 +937,7 @@ class _ReservationListCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                if (res.status == ReservationStatus.active) ...[
+                if (res.status == ReservationStatus.active && AuthService.instance.currentPermissions.canConvertReservationToSale) ...[
                   ElevatedButton.icon(
                     onPressed: onSell,
                     icon: const Icon(Icons.point_of_sale_rounded, size: 15),
@@ -952,18 +955,20 @@ class _ReservationListCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                 ],
-                OutlinedButton.icon(
-                  onPressed: onEdit,
-                  icon: const Icon(Icons.edit_outlined, size: 15),
-                  label: Text('Edit', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: colors.primary,
-                    side: BorderSide(color: colors.primary.withAlpha(120)),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                if (AuthService.instance.currentPermissions.canCreateReservation) ...[
+                  OutlinedButton.icon(
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit_outlined, size: 15),
+                    label: Text('Edit', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colors.primary,
+                      side: BorderSide(color: colors.primary.withAlpha(120)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
                   ),
-                ),
-                if (res.status == ReservationStatus.active) ...[
+                ],
+                if (res.status == ReservationStatus.active && AuthService.instance.currentPermissions.canCancelReservation) ...[
                   const SizedBox(width: 10),
                   OutlinedButton(
                     onPressed: onCancel,
@@ -1925,17 +1930,11 @@ class _ReservationsFormDialogState extends State<ReservationsFormDialog> {
     if (mat == null) {
       return Icon(Icons.image_outlined, color: colors.textDisabled, size: 24);
     }
-    if (mat.imageBytes != null) {
-      return Image.memory(mat.imageBytes!, fit: BoxFit.cover);
-    }
-    if (mat.imageUrl != null && mat.imageUrl!.isNotEmpty) {
-      return Image.network(
-        mat.imageUrl!,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Icon(Icons.texture_rounded, color: colors.primary, size: 24),
-      );
-    }
-    return Icon(Icons.texture_rounded, color: colors.primary, size: 24);
+    return StoneImageWidget(
+      material: mat,
+      fit: BoxFit.cover,
+      enablePreviewOnTap: true,
+    );
   }
 
   Widget _buildLabel(String text) {

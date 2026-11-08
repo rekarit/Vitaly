@@ -11,6 +11,7 @@ import '../../core/theme/responsive.dart';
 import '../reservations/reservations_screen.dart';
 import 'advanced_stone_filter_dialog.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/widgets/stone_image_widget.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────
 /// Available Stone Screen
@@ -482,27 +483,29 @@ class AvailableStoneScreenState extends State<AvailableStoneScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (_currentTab == StoneStockTab.damaged) ...[
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.check_circle_rounded, size: 16),
-                        label: const Text('Restore to Available'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF10B981),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      if (AuthService.instance.currentPermissions.canQuickRepairSlab)
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.check_circle_rounded, size: 16),
+                          label: const Text('Restore to Available'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF10B981),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onPressed: () {
+                            appState.setMultipleSlabsStatus(_selectedSlabIds.toList(), SlabStatus.available);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Successfully restored $count slabs to Available!'),
+                                backgroundColor: const Color(0xFF10B981),
+                              ),
+                            );
+                            setState(() => _selectedSlabIds.clear());
+                          },
                         ),
-                        onPressed: () {
-                          appState.setMultipleSlabsStatus(_selectedSlabIds.toList(), SlabStatus.available);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Successfully restored $count slabs to Available!'),
-                              backgroundColor: const Color(0xFF10B981),
-                            ),
-                          );
-                          setState(() => _selectedSlabIds.clear());
-                        },
-                      ),
-                      const SizedBox(width: 8),
+                      if (AuthService.instance.currentPermissions.canQuickRepairSlab)
+                        const SizedBox(width: 8),
                       ElevatedButton.icon(
                         icon: const Icon(Icons.cancel_rounded, size: 16),
                         label: const Text('Mark Unavailable'),
@@ -587,34 +590,36 @@ class AvailableStoneScreenState extends State<AvailableStoneScreen> {
                           );
                         },
                       ),
-                      const SizedBox(width: 8),
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.broken_image_rounded, size: 16),
-                        label: const Text('Mark Damaged'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFEA580C),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      if (AuthService.instance.currentPermissions.canMarkSlabDamagedInStone) ...[
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.broken_image_rounded, size: 16),
+                          label: const Text('Mark Damaged'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFEA580C),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onPressed: () {
+                            appState.setMultipleSlabsStatus(
+                              _selectedSlabIds.toList(),
+                              SlabStatus.damaged,
+                              defectNotes: 'Marked damaged via bulk selection',
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Moved $count slabs to Damaged stock!'),
+                                backgroundColor: const Color(0xFFEA580C),
+                              ),
+                            );
+                            setState(() {
+                              _selectedSlabIds.clear();
+                              _currentTab = StoneStockTab.damaged;
+                            });
+                          },
                         ),
-                        onPressed: () {
-                          appState.setMultipleSlabsStatus(
-                            _selectedSlabIds.toList(),
-                            SlabStatus.damaged,
-                            defectNotes: 'Marked damaged via bulk selection',
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Moved $count slabs to Damaged stock!'),
-                              backgroundColor: const Color(0xFFEA580C),
-                            ),
-                          );
-                          setState(() {
-                            _selectedSlabIds.clear();
-                            _currentTab = StoneStockTab.damaged;
-                          });
-                        },
-                      ),
+                      ],
                     ],
                     const SizedBox(width: 8),
                     IconButton(
@@ -1219,11 +1224,13 @@ class AvailableStoneScreenState extends State<AvailableStoneScreen> {
                     border: Border.all(color: colors.border),
                   ),
                   clipBehavior: Clip.antiAlias,
-                  child: mat.imageBytes != null
-                      ? Image.memory(mat.imageBytes!, fit: BoxFit.cover)
-                      : (mat.imageUrl != null && mat.imageUrl!.isNotEmpty
-                          ? Image.network(mat.imageUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _defaultStoneIcon(colors))
-                          : _defaultStoneIcon(colors)),
+                  child: StoneImageWidget(
+                    material: mat,
+                    width: thumbSize,
+                    height: thumbSize,
+                    fit: BoxFit.cover,
+                    enablePreviewOnTap: true,
+                  ),
                 );
 
                 final nameRow = Row(
@@ -2025,12 +2032,6 @@ class AvailableStoneScreenState extends State<AvailableStoneScreen> {
     );
   }
 
-  Widget _defaultStoneIcon(AppColorsExtension colors) {
-    return Center(
-      child: Icon(Icons.terrain_rounded, size: 24, color: colors.textDisabled),
-    );
-  }
-
   // ── Empty State ─────────────────────────────────────────────────────────────
   Widget _buildEmptyState(AppColorsExtension colors) {
     return Center(
@@ -2098,11 +2099,11 @@ class AvailableStoneScreenState extends State<AvailableStoneScreen> {
                   children: [
                     Container(
                       color: isDark ? colors.surfaceVariant : const Color(0xFFF1F5F9),
-                      child: mat.imageBytes != null
-                          ? Image.memory(mat.imageBytes!, fit: BoxFit.cover)
-                          : (mat.imageUrl != null && mat.imageUrl!.isNotEmpty
-                              ? Image.network(mat.imageUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _defaultStoneIcon(colors))
-                              : _defaultStoneIcon(colors)),
+                      child: StoneImageWidget(
+                        material: mat,
+                        fit: BoxFit.cover,
+                        enablePreviewOnTap: true,
+                      ),
                     ),
                     // Gradient overlay at bottom of image
                     Positioned.fill(

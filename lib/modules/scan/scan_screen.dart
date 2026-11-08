@@ -366,8 +366,8 @@ class _ScanScreenState extends State<ScanScreen> {
               ),
               const SizedBox(height: 12),
 
-              // Direct Mark Damaged button for warehouse tablet / mobile users
-              if (row.status.toLowerCase() != 'damaged')
+              // Direct Mark Damaged button for warehouse tablet / mobile users (Permission Guarded)
+              if (row.status.toLowerCase() != 'damaged' && AuthService.instance.currentPermissions.canDirectMarkDamagedInScan)
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(

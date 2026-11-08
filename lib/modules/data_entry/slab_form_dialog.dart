@@ -11,6 +11,7 @@ import '../../core/models/slab.dart';
 import '../../core/state/app_state_scope.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/responsive.dart';
+import '../../core/widgets/stone_image_widget.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────
 /// StoneInventory Form Dialog
@@ -1105,15 +1106,14 @@ class _SlabFormDialogState extends State<SlabFormDialog> {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),
-                        child: _photoBytes != null
-                            ? Image.memory(_photoBytes!, width: 44, height: 44, fit: BoxFit.cover)
-                            : Image.network(
-                                _photoUrl!,
-                                width: 44,
-                                height: 44,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Icon(Icons.terrain_rounded, size: 28, color: colors.primary),
-                              ),
+                        child: StoneImageWidget(
+                          imageUrl: _photoUrl,
+                          imageBytes: _photoBytes,
+                          width: 44,
+                          height: 44,
+                          fit: BoxFit.cover,
+                          enablePreviewOnTap: true,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(

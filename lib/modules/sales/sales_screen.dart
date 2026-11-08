@@ -749,33 +749,39 @@ class _SaleGridCard extends StatelessWidget {
                     ],
                   ),
 
-                  // Actions: [Trash] [Edit] [Payment] [Detail Button]
+                  // Actions: [Trash] [Edit] [Payment] [Detail Button] (Permission Guarded)
                   Row(
                     children: [
-                      IconButton(
-                        icon: Icon(Icons.delete_outline_rounded, size: 18, color: colors.error),
-                        onPressed: onDelete,
-                        tooltip: 'Delete Sale',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: Icon(Icons.edit_outlined, size: 18, color: colors.textSecondary),
-                        onPressed: onEdit,
-                        tooltip: 'Edit Sale',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: Icon(Icons.payments_outlined, size: 18, color: colors.success),
-                        onPressed: onPayment,
-                        tooltip: 'Payment Form',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                      const SizedBox(width: 8),
+                      if (AuthService.instance.currentPermissions.canCancelSale) ...[
+                        IconButton(
+                          icon: Icon(Icons.delete_outline_rounded, size: 18, color: colors.error),
+                          onPressed: onDelete,
+                          tooltip: 'Delete Sale',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      if (AuthService.instance.currentPermissions.canCreateSale) ...[
+                        IconButton(
+                          icon: Icon(Icons.edit_outlined, size: 18, color: colors.textSecondary),
+                          onPressed: onEdit,
+                          tooltip: 'Edit Sale',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      if (AuthService.instance.currentPermissions.canProcessPayment) ...[
+                        IconButton(
+                          icon: Icon(Icons.payments_outlined, size: 18, color: colors.success),
+                          onPressed: onPayment,
+                          tooltip: 'Payment Form',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: onDetail,

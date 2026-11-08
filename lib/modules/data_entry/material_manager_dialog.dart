@@ -3,10 +3,12 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/models/category_model.dart';
 import '../../core/models/material_item.dart';
+import '../../core/services/auth_service.dart';
 import '../../core/state/app_state.dart';
 import '../../core/state/app_state_scope.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/responsive.dart';
+import '../../core/widgets/stone_image_widget.dart';
 
 /// Modal dialog for managing materials (Edit, Delete with safety checks, Transfer slabs).
 /// Built identically to CategoryManagerDialog for consistency and power.
@@ -143,25 +145,26 @@ class _MaterialManagerDialogState extends State<MaterialManagerDialog> {
                       ],
                     ),
                   ),
-                  // New Material Button
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colors.primary,
-                      foregroundColor: isDark ? const Color(0xFF111418) : Colors.white,
-                      padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 14, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      elevation: 0,
+                  // New Material Button (Permission Guarded)
+                  if (AuthService.instance.currentPermissions.canAddMaterial)
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.primary,
+                        foregroundColor: isDark ? const Color(0xFF111418) : Colors.white,
+                        padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 14, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        elevation: 0,
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        widget.onAddNewMaterial();
+                      },
+                      icon: const Icon(Icons.add_rounded, size: 16),
+                      label: Text(
+                        isMobile ? 'Add' : 'Add Material',
+                        style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600),
+                      ),
                     ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      widget.onAddNewMaterial();
-                    },
-                    icon: const Icon(Icons.add_rounded, size: 16),
-                    label: Text(
-                      isMobile ? 'Add' : 'Add Material',
-                      style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600),
-                    ),
-                  ),
                   const SizedBox(width: 6),
                   IconButton(
                     icon: Icon(Icons.close_rounded, color: colors.textSecondary),
@@ -319,7 +322,7 @@ class _MaterialManagerDialogState extends State<MaterialManagerDialog> {
                             ),
                             child: Row(
                               children: [
-                                // Material Thumbnail or Stone Icon
+                                // Material Thumbnail with tap-to-preview
                                 Container(
                                   width: 44,
                                   height: 44,
@@ -329,11 +332,13 @@ class _MaterialManagerDialogState extends State<MaterialManagerDialog> {
                                     border: Border.all(color: colors.border),
                                   ),
                                   clipBehavior: Clip.antiAlias,
-                                  child: mat.imageBytes != null
-                                      ? Image.memory(mat.imageBytes!, fit: BoxFit.cover)
-                                      : Center(
-                                          child: Icon(Icons.layers_rounded, size: 22, color: colors.primary),
-                                        ),
+                                  child: StoneImageWidget(
+                                    material: mat,
+                                    width: 44,
+                                    height: 44,
+                                    fit: BoxFit.cover,
+                                    enablePreviewOnTap: true,
+                                  ),
                                 ),
                                 const SizedBox(width: 12),
 
@@ -404,24 +409,26 @@ class _MaterialManagerDialogState extends State<MaterialManagerDialog> {
                                   ),
                                 ),
 
-                                // Actions: Edit, Delete
+                                // Actions: Edit, Delete (Permission Guarded)
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     // Edit Button
-                                    IconButton(
-                                      icon: Icon(Icons.edit_outlined, size: 18, color: colors.textSecondary),
-                                      tooltip: 'Edit Material',
-                                      splashRadius: 18,
-                                      onPressed: () => _openEditDialog(context, mat, appState, colors, isDark),
-                                    ),
+                                    if (AuthService.instance.currentPermissions.canEditMaterial)
+                                      IconButton(
+                                        icon: Icon(Icons.edit_outlined, size: 18, color: colors.textSecondary),
+                                        tooltip: 'Edit Material',
+                                        splashRadius: 18,
+                                        onPressed: () => _openEditDialog(context, mat, appState, colors, isDark),
+                                      ),
                                     // Delete Button
-                                    IconButton(
-                                      icon: Icon(Icons.delete_outline_rounded, size: 19, color: colors.error),
-                                      tooltip: 'Delete Material',
-                                      splashRadius: 18,
-                                      onPressed: () => _handleDeleteMaterial(context, mat, slabCount, areaSqm, appState, colors, isDark),
-                                    ),
+                                    if (AuthService.instance.currentPermissions.canDeleteMaterial)
+                                      IconButton(
+                                        icon: Icon(Icons.delete_outline_rounded, size: 19, color: colors.error),
+                                        tooltip: 'Delete Material',
+                                        splashRadius: 18,
+                                        onPressed: () => _handleDeleteMaterial(context, mat, slabCount, areaSqm, appState, colors, isDark),
+                                      ),
                                   ],
                                 ),
                               ],

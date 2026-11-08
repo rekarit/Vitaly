@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/models/material_audit_record.dart';
+import '../../core/services/auth_service.dart';
 import '../../core/state/app_state_scope.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -458,6 +459,7 @@ class _DataCheckDetailPanelState extends State<DataCheckDetailPanel> {
                               Expanded(
                                 child: TextField(
                                   controller: _physicalCtrl,
+                                  readOnly: !AuthService.instance.currentPermissions.canEditAuditRecord,
                                   keyboardType:
                                       const TextInputType.numberWithOptions(
                                           decimal: true),
@@ -517,6 +519,7 @@ class _DataCheckDetailPanelState extends State<DataCheckDetailPanel> {
                           const SizedBox(height: 6),
                           TextField(
                             controller: _notesCtrl,
+                            readOnly: !AuthService.instance.currentPermissions.canEditAuditRecord,
                             maxLines: 2,
                             style: GoogleFonts.inter(
                               color: colors.textPrimary,
@@ -576,32 +579,34 @@ class _DataCheckDetailPanelState extends State<DataCheckDetailPanel> {
 
                     const SizedBox(height: 28),
 
-                    // Save / Apply Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 44,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4A90E2),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                    // Save / Apply Button (Permission Guarded)
+                    if (AuthService.instance.currentPermissions.canEditAuditRecord) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        height: 44,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4A90E2),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            elevation: 2,
                           ),
-                          elevation: 2,
-                        ),
-                        onPressed: () => _saveChanges(state, liveAppSqm),
-                        icon: const Icon(Icons.check_rounded,
-                            size: 18, color: Colors.white),
-                        label: Text(
-                          'Save Changes',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                          onPressed: () => _saveChanges(state, liveAppSqm),
+                          icon: const Icon(Icons.check_rounded,
+                              size: 18, color: Colors.white),
+                          label: Text(
+                            'Save Changes',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
+                    ],
                   ],
                 ),
               ),
