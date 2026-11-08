@@ -29,10 +29,15 @@
         }
       });
     }
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        for (var name of names) caches.delete(name);
+      });
+    }
   </script>
 </head>
 <body>
-  <script src="flutter_bootstrap.js?v=20261108155916" async></script>
+  <script src="flutter_bootstrap.js?v=20261108235828" async></script>
 </body>
 </html>
 
