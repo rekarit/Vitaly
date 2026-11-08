@@ -31630,33 +31630,33 @@ return A.am(["Authorization","token "+B.aR.cI(B.kf.dB("Z2hwX005UXpvT1NYVE81blZRR
 x9(){var s=0,r=A.B(t.nA),q,p=2,o=[],n,m,l,k,j,i,h,g,f,e,d,c,b
 var $async$x9=A.C(function(a,a0){if(a===1){o.push(a0)
 s=p}for(;;)switch(s){case 0:p=4
-n=Date.now()
-m="https://raw.githubusercontent.com/rekarit/vitaly-app/gh-pages/vitaly_cloud_sync.json?t="+A.o(n)
-d=t.N
 s=7
-return A.n(A.kI(A.bW(m,0,null),A.am(["Cache-Control","no-cache, no-store, must-revalidate","Pragma","no-cache"],d,d)),$async$x9)
-case 7:l=a0
-if(l.b===200){d=l
-d=B.c.bQ(B.c.aa(A.fB(A.fz(d.e)).cI(d.w)),"{")}else d=!1
-if(d){d=l
-k=B.I.cS(A.fB(A.fz(d.e)).cI(d.w),null)
-if(t.a.b(k)){q=k
-s=1
-break}}s=8
 return A.n(A.kI(A.bW(u.F,0,null),A.QE()),$async$x9)
-case 8:j=a0
-if(j.b===200){d=j
-i=B.I.cS(A.fB(A.fz(d.e)).cI(d.w),null)
-d=J.cJ(i,"sha")
+case 7:n=a0
+if(n.b===200){d=n
+m=B.I.cS(A.fB(A.fz(d.e)).cI(d.w),null)
+d=J.cJ(m,"sha")
 $.n5=d==null?null:J.a5(d)
-if(J.cJ(i,"content")!=null){d=J.a5(J.cJ(i,"content"))
+if(J.cJ(m,"content")!=null){d=J.a5(J.cJ(m,"content"))
 d=A.j8(d,"\n","")
-h=A.j8(d,"\r","")
-g=B.aR.cI(B.kf.dB(h))
-f=B.I.cS(g,null)
+l=A.j8(d,"\r","")
+k=B.aR.cI(B.kf.dB(l))
+j=B.I.cS(k,null)
+if(t.a.b(j)){q=j
+s=1
+break}}}i=Date.now()
+h="https://raw.githubusercontent.com/rekarit/vitaly-app/gh-pages/vitaly_cloud_sync.json?t="+A.o(i)
+d=t.N
+s=8
+return A.n(A.kI(A.bW(h,0,null),A.am(["Cache-Control","no-cache, no-store, must-revalidate","Pragma","no-cache"],d,d)),$async$x9)
+case 8:g=a0
+if(g.b===200){d=g
+d=B.c.bQ(B.c.aa(A.fB(A.fz(d.e)).cI(d.w)),"{")}else d=!1
+if(d){d=g
+f=B.I.cS(A.fB(A.fz(d.e)).cI(d.w),null)
 if(t.a.b(f)){q=f
 s=1
-break}}}p=2
+break}}p=2
 s=6
 break
 case 4:p=3
