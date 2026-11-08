@@ -25,6 +25,7 @@ class MaterialItem {
   final String colorFamily;           // Legacy grouping
   final String? imageUrl;             // Image URL / path
   final Uint8List? imageBytes;        // In-memory image bytes for preview / upload
+  final bool active;                  // Active status (from ERP)
 
   MaterialItem({
     required this.id,
@@ -49,6 +50,7 @@ class MaterialItem {
     String? colorFamily,
     this.imageUrl,
     this.imageBytes,
+    this.active = true,
   })  : materialCode = materialCode ?? id,
         stoneType = stoneType ?? categoryId,
         referenceCode = referenceCode ?? (materialCode ?? id),
@@ -84,6 +86,7 @@ class MaterialItem {
     String? colorFamily,
     String? imageUrl,
     Uint8List? imageBytes,
+    bool? active,
   }) {
     return MaterialItem(
       id: id ?? this.id,
@@ -108,6 +111,7 @@ class MaterialItem {
       colorFamily: colorFamily ?? this.colorFamily,
       imageUrl: imageUrl ?? this.imageUrl,
       imageBytes: imageBytes ?? this.imageBytes,
+      active: active ?? this.active,
     );
   }
 
@@ -129,6 +133,7 @@ class MaterialItem {
     'pricePerSqm': pricePerSqm,
     'colorFamily': colorFamily,
     'imageUrl': imageUrl,
+    'active': active,
   };
 
   factory MaterialItem.fromJson(Map<String, dynamic> json) => MaterialItem(
@@ -149,6 +154,7 @@ class MaterialItem {
     pricePerSqm: (json['pricePerSqm'] as num?)?.toDouble() ?? 100.0,
     colorFamily: json['colorFamily']?.toString(),
     imageUrl: json['imageUrl']?.toString(),
+    active: json['active'] == null ? true : (json['active'] == true || json['active'].toString().toLowerCase() == 'true'),
   );
 
   @override

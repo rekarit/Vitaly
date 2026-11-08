@@ -72,14 +72,17 @@ class AppState extends ChangeNotifier {
       }
 
       final localMats = await LocalStorageService.loadMaterials();
+      // Ensure master materials from CSV catalog are always seeded into local storage
+      final matMap = {for (final m in MockData.masterMaterials) (m.materialCode.isNotEmpty ? m.materialCode : m.id): m};
       if (localMats.isNotEmpty) {
-        materials.clear();
-        materials.addAll(localMats);
-      } else if (materials.isEmpty) {
-        // Pre-load fixed AppSheet master stone catalog
-        materials.addAll(MockData.masterMaterials);
-        LocalStorageService.saveMaterials(materials);
+        for (final lm in localMats) {
+          final key = lm.materialCode.isNotEmpty ? lm.materialCode : lm.id;
+          matMap[key] = lm;
+        }
       }
+      materials.clear();
+      materials.addAll(matMap.values);
+      LocalStorageService.saveMaterials(materials);
 
       final localSlabs = await LocalStorageService.loadSlabs();
       if (localSlabs.isNotEmpty) {
@@ -175,7 +178,14 @@ class AppState extends ChangeNotifier {
         // Materials from Cloud
         if (cloudDb['materials'] is List) {
           final List mList = cloudDb['materials'];
-          final map = {for (final m in materials) (m.materialCode.isNotEmpty ? m.materialCode : m.id): m};
+          // Initialize with all 99 master materials from catalog
+          final map = {for (final m in MockData.masterMaterials) (m.materialCode.isNotEmpty ? m.materialCode : m.id): m};
+          // Overlay currently loaded local in-memory materials
+          for (final m in materials) {
+            final key = m.materialCode.isNotEmpty ? m.materialCode : m.id;
+            map[key] = m;
+          }
+          // Overlay cloud database updates
           for (final item in mList) {
             try {
               final mat = MaterialItem.fromJson(Map<String, dynamic>.from(item as Map));

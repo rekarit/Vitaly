@@ -1,0 +1,100 @@
+CategoryCode,MaterialCode,StoneType,MaterialName,Finish,ReferenceCode,MaterialImage,ERPDescription,ERPUnit,Active
+12,1201,Quartzite,CALACATTA GOLD,Polish,MRM5,https://vitalygroup.co/wp-content/uploads/2026/02/CALACATTA-GOLD-Quartize-polish-copy.jpg,1201-CALACATTA GOLD Quartize ( polish ) MRM5,sqm,TRUE
+12,1202,Quartzite,BIANKO CALACATTA,Sandblast,,https://vitalygroup.co/wp-content/uploads/2026/02/BIANKO-CALACATTA-Quartize-Sandblast-copy.jpg,1202-BIANKO CALACATTA Quartize ( sandblast ),sqm,TRUE
+12,1203,Quartzite,CRYSTAL BLUE EYES,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/CRYSTAL-BLUE-EYES-Quartize-polish-copy.jpg,1203-CRYSTAL BLUE EYES Quartize ( polish ),sqm,TRUE
+12,1204,Quartzite,CAPRAIA RIVER,Polish,B901,https://vitalygroup.co/wp-content/uploads/2026/02/CAPRAIA-RIVER-Quartize-Polish-copy.jpg,1204-CAPRAIA RIVER Quartize ( polish ) B901,sqm,TRUE
+12,1205,Quartzite,BIANKO CALACATTA,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/BIANKO-CALACATTA-Quartize-Sandblast-copy.jpg,1205-BIANKO CALACATTA Quartize ( polish ),sqm,TRUE
+12,1206,Quartzite,LUX CALACATTA,Polish,ME19,https://vitalygroup.co/wp-content/uploads/2026/02/LUX-CALACATTA-Quartize-Polish-copy.jpg,1206-LUX CALACATTA Quartize ( polish ) ME19,sqm,TRUE
+12,1207,Quartzite,CRYSTAL KOBANA,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/CRYSTAL-KOBANA-Quartize-polish-copy.jpg,1207-CRYSTAL KOBANA Quartize ( polish ),sqm,TRUE
+12,1208,Quartzite,CRISTAL PANDA,Polish,4307,https://vitalygroup.co/wp-content/uploads/2026/02/CRYSTAL-PANDA-Quartize-Polish-copy.jpg,1208-CRISTAL PANDA Quartize ( polish ) 4307,sqm,TRUE
+12,1209,Quartzite,SOFT ARAB SCATO,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/SOFT-ARAB-SCATO-Quartize-polish-copy.jpg,1209-SOFT ARAB SCATO Quartize ( polish ),sqm,TRUE
+12,1210,Quartzite,BIANKO WHITE,Polish,,https://vitalygroup.co/wp-content/uploads/2026/03/WHITE-Travertinehond-filled.jpg,1210-BIANKO WHITE Quartize ( polish ),sqm,TRUE
+12,1211,Quartzite,SAYMAN,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/SAYMAN-Quartize-polish-copy.jpg,1211-SAYMAN Quartize ( polish ),sqm,TRUE
+12,1212,Crystal,SILVER STREAM,Honed,,https://vitalygroup.co/wp-content/uploads/2026/02/SILVER-TravertineHond-copy.jpg,1212-SILVER STREAM Crystal ( hond ),sqm,TRUE
+12,1213,Quartzite,ARAB SCATO VAGLI,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/ARAB-SCATO-VAGLI-Quartize-polish-copy.jpg,1213-ARAB SCATO VAGLI Quartize ( polish ),sqm,TRUE
+12,1214,Quartzite,VITALY,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/VITALY-Quartize-polish-copy.jpg,1214-VITALY Quartize ( polish ),sqm,TRUE
+12,1215,Quartzite,CRYSTAL STATUARIO,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/CRYSTAL-STATUARIO-Quartize-Polish-copy.jpg,1215-CRYSTAL STATUARIO Quartize ( polish ),sqm,TRUE
+12,1216,Crystal,BLACK FUSION,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/BLACK-FUSION-Crystal-polish-copy.jpg,1216-BLACK FUSION Crystal ( polish ),sqm,TRUE
+12,1217,Crystal,SILVER STREAM,Rock Design,,https://vitalygroup.co/wp-content/uploads/2026/02/SILVER-TravertineHond-copy.jpg,1217-SILVER STREAM Crystal ( rock desiqn ),sqm,TRUE
+12,1218,Crystal,SCATO WHITE,Polish,,https://vitalygroup.co/wp-content/uploads/2026/03/WHITE-Travertinehond-filled.jpg,1218-SCATO WHITE Crystal ( polish ),sqm,TRUE
+13,1301,Marble,SILK EMPERADOR,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/SILK-EMPERADOR-Marble-Polish-copy.jpg,1301-SILK EMPERADOR Marble ( polish ),sqm,TRUE
+13,1302,Marble,DARK EMPERADOR MARSHAL,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/DARK-EMPERADOR-MARSHAL-Marble-polish-copy.jpg,1302-DARK EMPERADOR MARSHAL Marble ( polish ),sqm,TRUE
+13,1303,Marble,IVORY WHITE,Polish,,https://vitalygroup.co/wp-content/uploads/2026/03/WHITE-Travertinehond-filled.jpg,1303-IVORY WHITE Marble ( polish ),sqm,TRUE
+13,1304,Marble,TORANJ,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/TORANJ-Marble-Polish-copy.jpg,1304-TORANJ Marble ( polish ),sqm,TRUE
+13,1305,Marble,BRONZE ARMANI,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/BRONZE-ARMANI-Marble-Polish-copy.jpg,1305-BRONZE ARMANI Marble ( polish ),sqm,TRUE
+13,1306,Marble,ROYAL GREY,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/ROYAL-GREY-Marble-polish-copy.jpg,1306-ROYAL GREY Marble ( polish ),sqm,TRUE
+13,1307,Marble,COCO,Polish,5674,https://vitalygroup.co/wp-content/uploads/2026/02/COCO-Marble-Polish-copy.jpg,1307-COCO Marble ( polish ) 5674,sqm,TRUE
+13,1308,Marble,CRISTAL KAMAL PASHA,Polish,2698,https://vitalygroup.co/wp-content/uploads/2026/02/CRYSTAL-KAMAL-PASHA-Marble-polish-copy.jpg,1308-CRISTAL KAMAL PASHA Marble ( polish ) 2698,sqm,TRUE
+13,1309,Marble,ABSOLUTE ZEBRA,Polish,,,1309-ABSOLUTE ZEBRA Marble ( polish ),sqm,TRUE
+13,1310,Marble,ABSOLUTE,Polish,,,1310-ABSOLUTE Marble ( polish ),sqm,TRUE
+13,1311,Marble,OLIVE GREEN,Bush Hammered,,https://vitalygroup.co/wp-content/uploads/2026/02/OLIVE-GREEN-Marble-Bush-hammered-copy.jpg,1311-OLIVE GREEN Marble ( bush - hammerd ),sqm,TRUE
+13,1312,Marble,OLIVE GREEN,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/OLIVE-GREEN-Marble-Bush-hammered-copy.jpg,1312-OLIVE GREEN Marble ( polish ),sqm,TRUE
+13,1313,Marble,BROWN GALAXY,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/BROWN-GALAXY-Marble-Polish-copy.jpg,1313-BROWN GALAXY Marble ( polish ),sqm,TRUE
+13,1314,Marble,DREAM GREY,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/DREAM-GREY-Marble-Polish-copy.jpg,1314-DREAM GREY Marble ( polish ),sqm,TRUE
+13,1315,Marble,3D BLACK,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/3D-BLACK-Marble-polish-copy.jpg,1315-3D BLACK Marble ( polish ),sqm,TRUE
+13,1316,Marble,SAVANA NOIR,Polish,,,1316-SAVANA NOIR Marble ( polish ),sqm,TRUE
+13,1317,Marble,BLAACK NIGHT,Polish,,,1317-BLAACK NIGHT Marble ( polish ),sqm,TRUE
+14,1401,Granite,BLACK RIVER,Polish,Y45,https://vitalygroup.co/wp-content/uploads/2026/03/BLACK-RIVER-Granite-hond.jpg,1401-BLACK RIVER Granite ( polish ) Y45,sqm,TRUE
+14,1402,Granite,LOTUS GREEN,Polish,,,1402-LOTUS GREEN Granite ( polish ),sqm,TRUE
+14,1403,Granite,JAGUAR GREEN,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/JAGUAR-GREEN-Granite-Polish-copy.jpg,1403-JAGUAR GREEN Granite ( polish ),sqm,TRUE
+14,1404,Granite,KING GREEN,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/KING-GREEN-Granite-Polish-copy.jpg,1404-KING GREEN Granite ( polish ),sqm,TRUE
+14,1405,Granite,WHITE SANDED,Polish,,https://vitalygroup.co/wp-content/uploads/2026/03/WHITE-Travertinehond-filled.jpg,1405-WHITE SANDED Granite ( polish ),sqm,TRUE
+14,1406,Granite,BLACK CASPIAN,Leather,R48,https://vitalygroup.co/wp-content/uploads/2026/02/BLACK-CASPIAN-Granite-leather-copy.jpg,1406-BLACK CASPIAN Granite ( leather )R48,sqm,TRUE
+14,1407,Granite,BLACK RIVER,Honed,Y44,https://vitalygroup.co/wp-content/uploads/2026/03/BLACK-RIVER-Granite-hond.jpg,1407-BLACK RIVER Granite ( hond )Y44,sqm,TRUE
+14,1408,Granite,INFINITY,Nano Epoxy,,https://vitalygroup.co/wp-content/uploads/2026/02/INFINITY-Granite-Leather-copy.jpg,1408-INFINITY Granite ( nano epoxy ),sqm,TRUE
+14,1409,Granite,WHITE SANDED,Lineal,,https://vitalygroup.co/wp-content/uploads/2026/03/WHITE-Travertinehond-filled.jpg,1409-WHITE SANDED Granite ( lineal ),sqm,TRUE
+14,1410,Granite,NATIV BLACK,Lineal Plus,,https://vitalygroup.co/wp-content/uploads/2026/02/NATIV-BLACK-Granite-lineal-plus-copy.jpg,1410-NATIV BLACK Granite ( lineal plus ),sqm,TRUE
+14,1411,Granite,BLACK SANDED,Honed,,https://vitalygroup.co/wp-content/uploads/2026/02/BLACK-SANDED-Granite-Hond-copy.jpg,1411-BLACK SANDED Granite ( hond ),sqm,TRUE
+14,1412,Granite,INFINITY,Leather,,https://vitalygroup.co/wp-content/uploads/2026/02/INFINITY-Granite-Leather-copy.jpg,1412-INFINITY Granite ( leather ),sqm,TRUE
+14,1413,Granite,BLACK ZEBRA,Leather,R65,https://vitalygroup.co/wp-content/uploads/2026/02/BLACK-ZEBRA-Granite-Leather-copy.jpg,1413-BLACK ZEBRA Granite ( Leather ) R65,sqm,TRUE
+14,1415,Granite,SPLENDOR BLACK,Lineal Plus,,https://vitalygroup.co/wp-content/uploads/2026/06/Splendor-Black-Granite-2048x1365.png,1415-SPLENDOR BLACK Granite ( lineal plus ),sqm,TRUE
+14,1416,Granite,VOLGA BLUE,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/VOLGA-BLUE-Granite-polish-copy.jpg,1416-VOLGA BLUE Granite ( polish ),sqm,TRUE
+14,1417,Granite,GOLDEN GREEN,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/GOLDEN-GREEN-Granite-polish-copy.jpg,1417-GOLDEN GREEN Granite ( polish ),sqm,TRUE
+14,1418,Granite,BLACK FOREST,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/BLACK-FOREST-Granite-Polish-copy.jpg,1418-BLACK FOREST Granite ( polish ),sqm,TRUE
+14,1419,Granite,DELICATUS GOLD,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/DELICATUS-GOLD-Granite-polish-copy.jpg,1419-DELICATUS GOLD Granite ( polish ),sqm,TRUE
+14,1420,Granite,BLACK SANDED,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/BLACK-SANDED-Granite-Hond-copy.jpg,1420-BLACK SANDED Granite ( polish ),sqm,TRUE
+14,1421,Granite,VERDE AMAZONIA,Super Rock Design,,https://vitalygroup.co/wp-content/uploads/2026/06/Verde-Amazonia-scaled-e1782717655370-2048x1041.png,1421-VERDE AMAZONIA Granite ( super rock design ),sqm,TRUE
+14,1422,Granite,AQUA VERDE,Super Rock Design,,,1422-AQUA VERDE Granite ( super rock design ),sqm,TRUE
+14,1423,Granite,VENETIAN,Lineal Plus,,,1423-VENETIAN Granite ( lineal plus ),sqm,TRUE
+14,1424,Granite,NERO PERTIFIED WOOD RETRO,Super Rock Design,,https://vitalygroup.co/wp-content/uploads/2026/06/IMG_0319-scaled-e1782742478639-2048x1190.png,1424-NERO PERTIFIED WOOD RETRO Granite ( super rock design ),sqm,TRUE
+14,1425,Granite,KOSMUS SILVER - GOLD,Super Rock Design,,https://vitalygroup.co/wp-content/uploads/2026/02/SILVER-TravertineHond-copy.jpg,1425-KOSMUS SILVER - GOLD Granite ( super rock design ),sqm,TRUE
+14,1426,Granite,BLACK DIAMOND,Lineal Extreme Dark,,https://vitalygroup.co/wp-content/uploads/2026/06/IMG_0323.jpeg,1426-BLACK DIAMOND Granite ( lineal extreme darck ),sqm,TRUE
+14,1427,Granite,BLACK,Cotton Design,,,1427-BLACK CRYSTAL Granite ( cotton design ),sqm,TRUE
+14,1428,Granite,BLACK,Rock Design,,,1428-BLACK CRYSTAL Granite ( rock design ),sqm,TRUE
+14,1429,Granite,DOLPHINI,Rock Design,,,1429-DOLPHINI Granite ( rock design ),sqm,TRUE
+14,1430,Granite,DOLPHINI,Leather,,,1430-DOLPHINI Granite ( leather ),sqm,TRUE
+14,1432,Granite,BLACK,Flamed & Brushed,,,1432-BLACK Granite ( flam & brush ),sqm,TRUE
+15,1501,Onyx,FIRE,Polish,,,1501-FIRE Onyx ( polish ),sqm,TRUE
+15,1502,Onyx,WHITE,Polish & Vein Cut,JB101,https://vitalygroup.co/wp-content/uploads/2026/03/WHITE-Travertinehond-filled.jpg,1502-WHITE Onyx ( polish & vein cut ) JB101,sqm,TRUE
+15,1503,Onyx,RAINBOW,Leather,,,1503-RAINBOW Onyx marble ( leather ),sqm,TRUE
+15,1504,Onyx,3D WHITE,Polish,,https://vitalygroup.co/wp-content/uploads/2026/03/WHITE-Travertinehond-filled.jpg,1504-3D WHITE Onyx ( polish ),sqm,TRUE
+15,1505,Onyx,GREEN BLUE,Polish,,https://vitalygroup.co/wp-content/uploads/2026/06/Onyx-Vitaly-12-scaled-e1782737433318-2048x1205.png,1505-GREEN BLUE Onyx ( polish ),sqm,TRUE
+15,1506,Onyx,GREEN,Polish,,,1506-GREEN Onyx ( polish ),sqm,TRUE
+15,1507,Onyx,LIGHT GREEN,Polish,,https://vitalygroup.co/wp-content/uploads/2026/06/IMG_0314-1-2048x1365.png,1507-LIGHT GREEN Onyx ( polish ),sqm,TRUE
+15,1508,Onyx,WHITE Traonyx,Polish,,https://vitalygroup.co/wp-content/uploads/2026/03/WHITE-Travertinehond-filled.jpg,1508-WHITE Traonyx ( polish ),sqm,TRUE
+15,1509,Onyx,BLUE,Not Specified,,,1509-BLUE ONYX,sqm,TRUE
+16,1601,Travertine,WHITE,Honed & Unfilled,,https://vitalygroup.co/wp-content/uploads/2026/03/WHITE-Travertinehond-filled.jpg,1601-WHITE Travertine ( hond & unfilled ),sqm,TRUE
+16,1602,Travertine,CREAM BEIGE,Leather & Cross Cut,,,1602-CREAM BEIGE Travertine ( leather & cross cut ),sqm,TRUE
+16,1603,Travertine,CREAM BEIGE,Honed & Vein Cut,,,1603-CREAM BEIGE Travertine ( hond & vein cut ),sqm,TRUE
+16,1604,Travertine,CLASSIC BEIGE,Polish,,https://vitalygroup.co/wp-content/uploads/2026/02/CLASSIC-BEIGE-Travertine-polish-copy.jpg,1604-CLASSIC BEIGE Travertine ( polish ),sqm,TRUE
+16,1605,Travertine,WHITE,Honed & Filled,,https://vitalygroup.co/wp-content/uploads/2026/03/WHITE-Travertinehond-filled.jpg,1605-WHITE Travertine ( hond & filled ),sqm,TRUE
+16,1606,Travertine,SILVER LIGHTE,Honed,,https://vitalygroup.co/wp-content/uploads/2026/02/SILVER-TravertineHond-copy.jpg,1606-SILVER LIGHTE Travertine ( hond ),sqm,TRUE
+16,1607,Travertine,SILVER,Honed,,https://vitalygroup.co/wp-content/uploads/2026/02/SILVER-TravertineHond-copy.jpg,1607-SILVER Travertine ( hond ),sqm,TRUE
+16,1608,Travertine,PASSIFIC LIGHTE,Leather,,,1608-PASSIFIC LIGHTE Travertine ( leather ),sqm,TRUE
+16,1609,Travertine,BROWN EMPERADOR,Polish,,,1609-BROWN EMPERADOR Travertine ( polish ),sqm,TRUE
+16,1610,Travertine,ZEBRINO,"Honed, Unfilled & Vein Cut",,https://vitalygroup.co/wp-content/uploads/2026/06/Zebrino-Travertine-scaled-e1782718458193-2048x992.png,"1610-ZEBRINO Travertine ( hond,unfilled & vein cut )",sqm,TRUE
+16,1611,Travertine,ADA TITANIUM,Honed & Vein Cut,,https://vitalygroup.co/wp-content/uploads/2026/06/Ada-Titanium-Travertine--scaled-e1782718716159-2048x1022.png,1611-ADA TITANIUM Travertine ( hond & vein cut ),sqm,TRUE
+16,1612,Travertine,SILVER GOLD,Honed & Unfilled,,https://vitalygroup.co/wp-content/uploads/2026/02/SILVER-TravertineHond-copy.jpg,1612-SILVER GOLD Travertine ( hond & unfilled ),sqm,TRUE
+17,1701,Crystal / Semi Precious,MULTICOLOR QUARTZ,Not Specified,,,1701-MULTICOLOR QUARTZ,sqm,TRUE
+17,1702,Crystal / Semi Precious,AGATONA,Not Specified,,https://vitalygroup.co/wp-content/uploads/2026/06/IMG_0325-e1782743572967.jpeg,1702-AGATONA,sqm,TRUE
+17,1703,Crystal / Semi Precious,AMETHYST,Not Specified,,https://vitalygroup.co/wp-content/uploads/2026/06/IMG_0327.jpeg,1703-AMETHYST,sqm,TRUE
+17,1704,Crystal / Semi Precious,BLACK SKIN AGATE,Not Specified,,https://vitalygroup.co/wp-content/uploads/2026/06/IMG_0329.jpeg,1704-BLACK SKIN AGATE,sqm,TRUE
+17,1705,Crystal / Semi Precious,NATURAL AGATE,Not Specified,,https://vitalygroup.co/wp-content/uploads/2026/06/IMG_0333.jpeg,1705-NATURAL AGATE,sqm,TRUE
+17,1706,Crystal / Semi Precious,NATURAL,Not Specified,,,1706-NATURAL CRYSTAL,sqm,TRUE
+17,1707,Crystal / Semi Precious,RED RIVER AGATE,Not Specified,,https://vitalygroup.co/wp-content/uploads/2026/06/IMG_0337.jpeg,1707-RED RIVER AGATE,sqm,TRUE
+17,1708,Crystal / Semi Precious,SMOKY QUARTZ DARK,Not Specified,,https://vitalygroup.co/wp-content/uploads/2026/06/IMG_0341.jpeg,1708-SMOKY QUARTZ DARK,sqm,TRUE
+17,1709,Crystal / Semi Precious,WHITE QUARTZ,Not Specified,,https://vitalygroup.co/wp-content/uploads/2026/03/WHITE-Travertinehond-filled.jpg,1709-WHITE QUARTZ,sqm,TRUE
+17,1710,Crystal / Semi Precious,GREEN SKIN AGATE,Not Specified,,https://vitalygroup.co/wp-content/uploads/2026/06/IMG_0331.jpeg,1710-GREEN SKIN AGATE,sqm,TRUE
+17,1711,Crystal / Semi Precious,MIRAGE,Polish,,,1711-MIRAGE ( polish ),sqm,TRUE
+17,1712,Crystal / Semi Precious,NEGRESCO BROWN,Not Specified,,,1712-NEGRESCO BROWN,sqm,TRUE
+17,teset,rwrewr,rwrwrw,rwerwer,rwerwr,Materials_Images/teset.MaterialImage.140239.jpg,rwerwer,rewrwe,TRUE

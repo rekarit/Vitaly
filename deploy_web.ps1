@@ -1,9 +1,20 @@
 # deploy_web.ps1 - Automated build and deployment to live GitHub Pages URL
+# Backup existing vitaly_cloud_sync.json if present
+if (Test-Path "build\web\vitaly_cloud_sync.json") {
+    Copy-Item "build\web\vitaly_cloud_sync.json" "vitaly_cloud_sync_backup.json" -Force
+}
+
 Write-Host "Building Flutter Web with --pwa-strategy=none --base-href /Vitaly/..." -ForegroundColor Cyan
 flutter build web --pwa-strategy=none --base-href /Vitaly/ --release
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Flutter web build failed!" -ForegroundColor Red
     exit 1
+}
+
+# Restore vitaly_cloud_sync.json into build/web
+if (Test-Path "vitaly_cloud_sync_backup.json") {
+    Copy-Item "vitaly_cloud_sync_backup.json" "build\web\vitaly_cloud_sync.json" -Force
+    Remove-Item "vitaly_cloud_sync_backup.json" -Force
 }
 
 $timestamp = Get-Date -Format 'yyyyMMddHHmmss'
@@ -48,6 +59,7 @@ git config user.name "rekarit"
 git config user.email "rekar@users.noreply.github.com"
 git add -A
 git commit -m "Deploy latest updates with cache busting v$timestamp"
+git pull --rebase origin gh-pages
 git push origin gh-pages
 Set-Location -Path "..\.."
 
