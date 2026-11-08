@@ -1,0 +1,40 @@
+name: vitaly_app
+description: Vitaly App — Natural Stone, Marble & Granite Warehouse ERP System.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Fonts
+  google_fonts: ^6.1.0
+
+  # Localization & formatting
+  intl: ^0.19.0
+
+  # QR Code generation
+  qr_flutter: ^4.1.0
+
+  # Barcode / QR scanning
+  mobile_scanner: ^5.1.0
+
+  # HTTP client
+  http: ^1.2.0
+
+  # Icons
+  cupertino_icons: ^1.0.6
+  file_picker: ^13.1.0
+  shared_preferences: ^2.5.6
+  path_provider: ^2.1.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
