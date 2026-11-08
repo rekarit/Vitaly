@@ -1690,22 +1690,10 @@ class DataEntryScreenState extends State<DataEntryScreen> {
   }
 
   Widget _buildSlabThumbnail(Slab slab, MaterialItem mat, AppColorsExtension colors) {
-    if (slab.photoBytes != null) {
-      return Image.memory(slab.photoBytes!, fit: BoxFit.cover);
-    }
-    if (slab.photoUrl != null && slab.photoUrl!.isNotEmpty) {
-      return Image.network(
-        slab.photoUrl!,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildMaterialFallbackThumbnail(mat, colors),
-      );
-    }
-    return _buildMaterialFallbackThumbnail(mat, colors);
-  }
-
-  Widget _buildMaterialFallbackThumbnail(MaterialItem mat, AppColorsExtension colors) {
     return StoneImageWidget(
       material: mat,
+      imageUrl: (slab.photoUrl != null && slab.photoUrl!.isNotEmpty) ? slab.photoUrl : mat.imageUrl,
+      imageBytes: slab.photoBytes ?? mat.imageBytes,
       fit: BoxFit.cover,
       enablePreviewOnTap: true,
     );

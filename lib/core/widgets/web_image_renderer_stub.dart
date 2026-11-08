@@ -11,3 +11,4 @@ Widget renderWebImage({
     errorBuilder: (ctx, err, stack) => errorBuilder(ctx),
   );
 }
+

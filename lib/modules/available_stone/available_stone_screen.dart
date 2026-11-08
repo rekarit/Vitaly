@@ -2142,6 +2142,27 @@ class AvailableStoneScreenState extends State<AvailableStoneScreen> {
                         ),
                       ),
                     ),
+                    // Tap to zoom icon badge top-right
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Material(
+                        color: Colors.black.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(20),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: () => StoneImagePreviewDialog.show(context, material: mat),
+                          child: const Padding(
+                            padding: EdgeInsets.all(6),
+                            child: Icon(
+                              Icons.fullscreen_rounded,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                     // Finish badge top-right
                     Positioned(
                       top: 10,
@@ -2640,6 +2661,21 @@ class _SlabsSheetContent extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 14, 10, 12),
           child: Row(
             children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: SizedBox(
+                  width: 42,
+                  height: 42,
+                  child: StoneImageWidget(
+                    material: mat,
+                    width: 42,
+                    height: 42,
+                    fit: BoxFit.cover,
+                    enablePreviewOnTap: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(

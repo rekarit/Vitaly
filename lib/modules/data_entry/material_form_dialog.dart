@@ -9,6 +9,7 @@ import '../../core/state/app_state.dart';
 import '../../core/state/app_state_scope.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/responsive.dart';
+import '../../core/widgets/stone_image_widget.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────
 /// Materials Form Dialog
@@ -810,64 +811,14 @@ class _MaterialFormDialogState extends State<MaterialFormDialog> {
                   _uploadedImageBytes!,
                   fit: BoxFit.cover,
                 )
-              : Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Modern stylized V logo placeholder matching AppSheet screenshot 2
-                      CustomPaint(
-                        size: const Size(60, 60),
-                        painter: _StylizedVPainter(color: const Color(0xFFE5DDD0)),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Display Image Preview',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: colors.textDisabled,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
+              : StoneImageWidget(
+                  imageUrl: StoneImageWidget.getDefaultImageUrlForCategory(_selectedCategory.categoryName),
+                  height: 220,
+                  fit: BoxFit.cover,
+                  enablePreviewOnTap: true,
                 ),
         ),
       ],
     );
   }
-}
-
-/// Custom painter for the AppSheet DisplayImage preview logo
-class _StylizedVPainter extends CustomPainter {
-  final Color color;
-  _StylizedVPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-    // Left diagonal beam
-    path.moveTo(size.width * 0.1, size.height * 0.15);
-    path.lineTo(size.width * 0.42, size.height * 0.15);
-    path.lineTo(size.width * 0.58, size.height * 0.88);
-    path.lineTo(size.width * 0.45, size.height * 0.88);
-    path.close();
-
-    // Right diagonal accent
-    final pathRight = Path();
-    pathRight.moveTo(size.width * 0.88, size.height * 0.15);
-    pathRight.lineTo(size.width * 0.72, size.height * 0.15);
-    pathRight.lineTo(size.width * 0.62, size.height * 0.52);
-    pathRight.lineTo(size.width * 0.74, size.height * 0.52);
-    pathRight.close();
-
-    canvas.drawPath(path, paint);
-    canvas.drawPath(pathRight, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
