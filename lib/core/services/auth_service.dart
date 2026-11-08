@@ -168,11 +168,6 @@ class AuthService extends ChangeNotifier {
         debugPrint('CloudSyncService pull error in AuthService: $e');
       }
 
-      // 2. Fallback to InsForge Cloud if needed
-      if (remoteUsers == null || remoteUsers.isEmpty) {
-        remoteUsers = await InsforgeService.fetchUsersFromCloud();
-      }
-
       if (remoteUsers != null && remoteUsers.isNotEmpty) {
         // Merge remote users with any locally created users so nothing is lost!
         final cleanUsers = remoteUsers
@@ -186,11 +181,13 @@ class AuthService extends ChangeNotifier {
             mergedMap[u.username.toLowerCase()] = u;
           }
         }
+
+        bool hasLocalOnlyUsers = false;
         for (final u in _users) {
-          // If local has a user not in cloud and not deleted, keep it
           final uName = u.username.toLowerCase();
           if (!_deletedUsernames.contains(uName) && !mergedMap.containsKey(uName)) {
             mergedMap[uName] = u;
+            hasLocalOnlyUsers = true;
           }
         }
 
@@ -213,6 +210,11 @@ class AuthService extends ChangeNotifier {
         }
 
         await _saveUsersLocallyOnly();
+
+        // If local had users not in cloud yet, push immediately!
+        if (hasLocalOnlyUsers) {
+          unawaited(_pushUsersToCloud());
+        }
 
         // Update current user session if credentials or permissions changed remotely
         if (_currentUser != null) {

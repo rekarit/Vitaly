@@ -44,8 +44,8 @@ class AppState extends ChangeNotifier {
 
   void _startRealtimePolling() {
     _realtimeSyncTimer?.cancel();
-    // Fast 3-second real-time sync across devices without reloading!
-    _realtimeSyncTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+    // Fast 2-second real-time sync across devices without reloading!
+    _realtimeSyncTimer = Timer.periodic(const Duration(seconds: 2), (_) {
       fetchFromInsforge(silent: true);
     });
   }

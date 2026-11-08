@@ -38,9 +38,9 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
   void initState() {
     super.initState();
     AuthService.instance.addListener(_onAuthChanged);
-    // Instant sync on open + continuous 3-second live sync across devices
+    // Instant sync on open + continuous 2-second live sync across devices
     AuthService.instance.syncFromCloud();
-    _realtimePollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+    _realtimePollTimer = Timer.periodic(const Duration(seconds: 2), (_) {
       if (mounted) {
         AuthService.instance.syncFromCloud();
       }
