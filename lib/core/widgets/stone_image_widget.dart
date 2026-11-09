@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/material_item.dart';
 import '../theme/app_theme.dart';
+import 'stone_texture_painter.dart';
 import 'web_image_renderer.dart';
 
-/// Universal stone image display widget that handles in-memory bytes, web HTML <img>
-/// rendering to bypass CORS limitations, and fallbacks. Also supports interactive tap to preview!
+/// Universal stone image display widget that renders authentic procedural stone slabs,
+/// handles uploaded photos, and provides interactive tap-to-preview modals.
 class StoneImageWidget extends StatelessWidget {
   final MaterialItem? material;
   final String? imageUrl;
@@ -53,15 +54,15 @@ class StoneImageWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     final bytes = imageBytes ?? material?.imageBytes;
     
-    // Resolve URL with smart category fallback so every single stone has an image
-    String? rawUrl = imageUrl ?? material?.imageUrl;
-    if (rawUrl != null && !rawUrl.startsWith('http')) {
-      rawUrl = null;
+    // Resolve URL
+    String? url = imageUrl ?? material?.imageUrl;
+    if (url != null && (!url.startsWith('http') || url.contains('vitalygroup.co'))) {
+      // vitalygroup.co blocks requests with 403 StackProtect anti-bot barrier
+      // Use the native, high-performance StoneTextureWidget instead
+      url = null;
     }
-    final effectiveUrl = rawUrl ?? (bytes != null ? null : getDefaultImageUrlForCategory(material?.categoryId));
 
     Widget imageContent;
 
@@ -71,30 +72,30 @@ class StoneImageWidget extends StatelessWidget {
         fit: fit,
         width: width,
         height: height,
-        errorBuilder: (_, __, ___) => _buildFallback(colors),
+        errorBuilder: (_, __, ___) => _buildTextureSlab(),
       );
-    } else if (effectiveUrl != null && effectiveUrl.isNotEmpty) {
+    } else if (url != null && url.isNotEmpty) {
       if (kIsWeb) {
         imageContent = SizedBox(
           width: width,
           height: height,
           child: renderWebImage(
-            url: effectiveUrl.trim(),
+            url: url.trim(),
             fit: fit,
-            errorBuilder: (_) => _buildFallback(colors),
+            errorBuilder: (_) => _buildTextureSlab(),
           ),
         );
       } else {
         imageContent = Image.network(
-          effectiveUrl.trim(),
+          url.trim(),
           fit: fit,
           width: width,
           height: height,
-          errorBuilder: (_, __, ___) => _buildFallback(colors),
+          errorBuilder: (_, __, ___) => _buildTextureSlab(),
         );
       }
     } else {
-      imageContent = _buildFallback(colors);
+      imageContent = _buildTextureSlab();
     }
 
     if (borderRadius != null) {
@@ -112,7 +113,7 @@ class StoneImageWidget extends StatelessWidget {
           onTap: () => StoneImagePreviewDialog.show(
             context,
             material: material,
-            imageUrl: effectiveUrl,
+            imageUrl: url,
             imageBytes: bytes,
           ),
           child: Stack(
@@ -145,18 +146,15 @@ class StoneImageWidget extends StatelessWidget {
     return imageContent;
   }
 
-  Widget _buildFallback(AppColorsExtension colors) {
-    return Container(
+  Widget _buildTextureSlab() {
+    return StoneTextureWidget(
+      categoryName: material?.categoryId,
+      stoneType: material?.stoneType,
+      materialName: material?.name,
+      materialCode: material?.materialCode,
+      finish: material?.finish ?? 'Polish',
       width: width,
       height: height,
-      color: colors.surfaceVariant,
-      child: Center(
-        child: Icon(
-          Icons.terrain_rounded,
-          size: (height != null && height! < 50) ? 20 : 28,
-          color: colors.primary.withValues(alpha: 0.6),
-        ),
-      ),
     );
   }
 }
@@ -232,11 +230,10 @@ class _StoneImagePreviewDialogState extends State<StoneImagePreviewDialog> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bytes = widget.imageBytes ?? widget.material?.imageBytes;
     
-    String? rawUrl = widget.imageUrl ?? widget.material?.imageUrl;
-    if (rawUrl != null && !rawUrl.startsWith('http')) {
-      rawUrl = null;
+    String? url = widget.imageUrl ?? widget.material?.imageUrl;
+    if (url != null && (!url.startsWith('http') || url.contains('vitalygroup.co'))) {
+      url = null;
     }
-    final url = rawUrl ?? (bytes != null ? null : StoneImageWidget.getDefaultImageUrlForCategory(widget.material?.categoryId));
 
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isMobile = screenWidth < 600;
@@ -384,7 +381,7 @@ class _StoneImagePreviewDialogState extends State<StoneImagePreviewDialog> {
                           child: renderWebImage(
                             url: url,
                             fit: BoxFit.contain,
-                            errorBuilder: (_) => _buildError(colors),
+                            errorBuilder: (_) => _buildTexturePreview(viewW, viewH),
                           ),
                         );
                       } else {
@@ -393,11 +390,11 @@ class _StoneImagePreviewDialogState extends State<StoneImagePreviewDialog> {
                           fit: BoxFit.contain,
                           width: viewW,
                           height: viewH,
-                          errorBuilder: (_, __, ___) => _buildError(colors),
+                          errorBuilder: (_, __, ___) => _buildTexturePreview(viewW, viewH),
                         );
                       }
                     } else {
-                      displayImage = _buildError(colors);
+                      displayImage = _buildTexturePreview(viewW, viewH);
                     }
 
                     return InteractiveViewer(
@@ -467,24 +464,49 @@ class _StoneImagePreviewDialogState extends State<StoneImagePreviewDialog> {
     );
   }
 
-  Widget _buildError(AppColorsExtension colors) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.terrain_rounded, size: 54, color: colors.primary.withValues(alpha: 0.6)),
-          const SizedBox(height: 12),
-          Text(
-            widget.material?.name.toUpperCase() ?? 'Stone Texture',
-            style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: colors.textPrimary),
+  Widget _buildTexturePreview(double width, double height) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        StoneTextureWidget(
+          categoryName: widget.material?.categoryId,
+          stoneType: widget.material?.stoneType,
+          materialName: widget.material?.name,
+          materialCode: widget.material?.materialCode,
+          finish: widget.material?.finish ?? 'Polish',
+          width: width,
+          height: height,
+        ),
+        // Natural Stone Slab Watermark Specimen Badge in bottom corner
+        Positioned(
+          left: 16,
+          bottom: 16,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.auto_awesome, size: 12, color: Color(0xFFF59E0B)),
+                const SizedBox(width: 6),
+                Text(
+                  '${widget.material?.stoneType ?? "NATURAL"} • ${widget.material?.finish ?? "POLISH"} SLAB',
+                  style: GoogleFonts.robotoMono(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Master stone texture loaded',
-            style: GoogleFonts.inter(fontSize: 12, color: colors.textSecondary),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
