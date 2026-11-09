@@ -21,6 +21,7 @@ import 'category_manager_dialog.dart';
 import 'material_manager_dialog.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/widgets/stone_image_widget.dart';
+import '../../core/services/pdf_label_service.dart';
 
 class DataEntryScreen extends StatefulWidget {
   const DataEntryScreen({super.key});
@@ -2412,7 +2413,33 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                       ),
                       if (_selectedSlabIds.isNotEmpty) ...[
                         const SizedBox(width: 8),
-                        if (AuthService.instance.currentPermissions.canDeleteSlab)
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.picture_as_pdf_rounded, size: 14),
+                          label: Text(
+                            'PDF (${_selectedSlabIds.length})',
+                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2563EB),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                          ),
+                          onPressed: () {
+                            final targetSlabs = slabs.where((s) => _selectedSlabIds.contains(s.id)).toList();
+                            PdfLabelService.downloadPdf(slabs: targetSlabs, appState: appState);
+                            PdfLabelService.previewPdfInNewTab(slabs: targetSlabs, appState: appState);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Downloaded PDF for ${targetSlabs.length} slabs! ✓'),
+                                backgroundColor: const Color(0xFF2563EB),
+                              ),
+                            );
+                          },
+                        ),
+                        if (AuthService.instance.currentPermissions.canDeleteSlab) ...[
+                          const SizedBox(width: 6),
                           ElevatedButton.icon(
                             icon: const Icon(Icons.delete_outline_rounded, size: 14),
                             label: Text(
@@ -2428,6 +2455,7 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                             ),
                             onPressed: () => _confirmBulkDeleteSlabs(appState),
                           ),
+                        ],
                         const SizedBox(width: 6),
                         TextButton(
                           onPressed: () => setState(() => _selectedSlabIds.clear()),
@@ -2757,6 +2785,44 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                               icon: Icon(Icons.copy_rounded, size: 16, color: colors.primary),
                               label: Text(
                                 'Copy SlabNo',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: colors.textPrimary,
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: colors.border),
+                                backgroundColor: isDark ? const Color(0xFF22252B) : const Color(0xFFF8F9FA),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // PDF Tag Button
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                PdfLabelService.downloadPdf(
+                                  slabs: [currentSlab],
+                                  appState: appState,
+                                );
+                                PdfLabelService.previewPdfInNewTab(
+                                  slabs: [currentSlab],
+                                  appState: appState,
+                                );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Downloaded PDF for ${currentSlab.slabNo}! ✓'),
+                                    backgroundColor: const Color(0xFF2563EB),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.picture_as_pdf_rounded, size: 16, color: Color(0xFF2563EB)),
+                              label: Text(
+                                'PDF Label',
                                 style: GoogleFonts.inter(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,

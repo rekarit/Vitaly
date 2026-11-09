@@ -9,6 +9,8 @@ import '../../core/state/app_state_scope.dart';
 import '../../core/models/slab.dart';
 import '../../core/models/material_item.dart';
 import '../../core/services/auth_service.dart';
+import 'package:printing/printing.dart';
+import '../../core/services/pdf_label_service.dart';
 
 // ── PRINT LABELS SCREEN ──────────────────────────────────────────────────────
 class PrintLabelsScreen extends StatefulWidget {
@@ -981,11 +983,8 @@ class _DirectPrintLabelDialogState extends State<_DirectPrintLabelDialog> {
   ];
 
   void _triggerPrint() async {
+    final state = AppStateScope.read(context);
     setState(() => _isPrinting = true);
-    await Future.delayed(const Duration(milliseconds: 700));
-
-    if (!mounted) return;
-    Navigator.pop(context);
 
     final slabName = widget.slabs.length == 1
         ? (widget.slabs.first.slabNo.isNotEmpty ? widget.slabs.first.slabNo : widget.slabs.first.id)
@@ -993,30 +992,156 @@ class _DirectPrintLabelDialogState extends State<_DirectPrintLabelDialog> {
 
     final isPdf = _selectedPrinter.toLowerCase().contains('pdf');
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isPdf ? Icons.picture_as_pdf_rounded : Icons.check_circle_rounded,
-              color: Colors.white,
-              size: 20,
+    try {
+      if (isPdf) {
+        // 1. Download real PDF file to user's downloads folder
+        await PdfLabelService.downloadPdf(
+          slabs: widget.slabs,
+          appState: state,
+          labelFormat: _selectedLabelSize,
+          copies: _copies,
+        );
+
+        // 2. Open PDF in a new tab so user sees the real document immediately!
+        await PdfLabelService.previewPdfInNewTab(
+          slabs: widget.slabs,
+          appState: state,
+          labelFormat: _selectedLabelSize,
+          copies: _copies,
+        );
+
+        if (!mounted) return;
+        Navigator.pop(context);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Downloaded $slabName PDF successfully & opened preview! ✓',
+                    style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                isPdf
-                    ? 'Saved $slabName as PDF document via $_selectedPrinter ✓'
-                    : 'Printing $_copies copy/copies of $slabName on $_selectedPrinter ✓',
-                style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600),
-              ),
+            backgroundColor: const Color(0xFF2563EB),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      } else {
+        // Physical Printer layout via system printer
+        await PdfLabelService.printPdfDocument(
+          slabs: widget.slabs,
+          appState: state,
+          labelFormat: _selectedLabelSize,
+          copies: _copies,
+        );
+
+        if (!mounted) return;
+        Navigator.pop(context);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.print_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Sent $_copies copy/copies of $slabName to printer ✓',
+                    style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
             ),
-          ],
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error generating PDF / printing: $e'),
+          backgroundColor: Colors.redAccent,
         ),
-        backgroundColor: isPdf ? const Color(0xFF2563EB) : const Color(0xFF2E7D32),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 4),
-      ),
+      );
+    } finally {
+      if (mounted) setState(() => _isPrinting = false);
+    }
+  }
+
+  void _openInteractivePdfPreview(dynamic state) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final colors = ctx.colors;
+        return Dialog(
+          backgroundColor: colors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 850, maxHeight: 750),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(Icons.picture_as_pdf_rounded, color: colors.primary, size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'PDF Label Document Preview',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: PdfPreview(
+                    build: (format) => PdfLabelService.generateLabelsPdf(
+                      slabs: widget.slabs,
+                      appState: state,
+                      labelFormat: _selectedLabelSize,
+                      copies: _copies,
+                    ),
+                    canChangeOrientation: false,
+                    canChangePageFormat: false,
+                    pdfFileName: 'vitaly_labels.pdf',
+                    loadingWidget: Center(
+                      child: CircularProgressIndicator(color: colors.primary),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1333,7 +1458,21 @@ class _DirectPrintLabelDialogState extends State<_DirectPrintLabelDialog> {
                       child: Text('Cancel', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _isPrinting ? null : () => _openInteractivePdfPreview(state),
+                      icon: const Icon(Icons.visibility_rounded, size: 16),
+                      label: Text('View PDF', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: colors.primary,
+                        side: BorderSide(color: colors.primary.withValues(alpha: 0.5)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   Expanded(
                     flex: 2,
                     child: ElevatedButton.icon(

@@ -12,6 +12,7 @@ import '../reservations/reservations_screen.dart';
 import 'advanced_stone_filter_dialog.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/widgets/stone_image_widget.dart';
+import '../../core/services/pdf_label_service.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────
 /// Available Stone Screen
@@ -587,6 +588,28 @@ class AvailableStoneScreenState extends State<AvailableStoneScreen> {
                           ReservationsFormDialog.show(
                             context,
                             preselectedSlabs: selectedSlabsList,
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
+                        label: Text('PDF Labels ($count)'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2563EB),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        onPressed: () {
+                          final selectedSlabsList = appState.slabs.where((s) => _selectedSlabIds.contains(s.id)).toList();
+                          PdfLabelService.downloadPdf(slabs: selectedSlabsList, appState: appState);
+                          PdfLabelService.previewPdfInNewTab(slabs: selectedSlabsList, appState: appState);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Downloaded PDF for $count slabs! ✓'),
+                              backgroundColor: const Color(0xFF2563EB),
+                            ),
                           );
                         },
                       ),
