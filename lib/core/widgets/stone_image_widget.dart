@@ -29,11 +29,26 @@ class StoneImageWidget extends StatelessWidget {
     this.enablePreviewOnTap = false,
   });
 
+  /// Automatically resolves WordPress CDN for vitalygroup.co so images load with CORS enabled
+  /// and without being blocked by external host 403/401 hotlink protection.
+  static String resolveImageUrl(String? rawUrl) {
+    if (rawUrl == null || rawUrl.trim().isEmpty) return '';
+    final trimmed = rawUrl.trim();
+    if (trimmed.startsWith('https://vitalygroup.co/')) {
+      return trimmed.replaceFirst('https://vitalygroup.co/', 'https://i0.wp.com/vitalygroup.co/');
+    }
+    if (trimmed.startsWith('http://vitalygroup.co/')) {
+      return trimmed.replaceFirst('http://vitalygroup.co/', 'https://i0.wp.com/vitalygroup.co/');
+    }
+    return trimmed;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final bytes = imageBytes ?? material?.imageBytes;
-    final url = (imageUrl ?? material?.imageUrl)?.trim();
+    final rawUrl = (imageUrl ?? material?.imageUrl)?.trim();
+    final effectiveUrl = resolveImageUrl(rawUrl);
 
     Widget imageContent;
 
@@ -45,23 +60,43 @@ class StoneImageWidget extends StatelessWidget {
         height: height,
         errorBuilder: (_, __, ___) => _buildFallback(colors),
       );
-    } else if (url != null && url.isNotEmpty && url.startsWith('http')) {
+    } else if (effectiveUrl.isNotEmpty && effectiveUrl.startsWith('http')) {
       if (kIsWeb) {
         imageContent = SizedBox(
           width: width,
           height: height,
           child: renderWebImage(
-            url: url,
+            url: effectiveUrl,
             fit: fit,
             errorBuilder: (_) => _buildFallback(colors),
           ),
         );
       } else {
         imageContent = Image.network(
-          url,
+          effectiveUrl,
           fit: fit,
           width: width,
           height: height,
+          loadingBuilder: (ctx, child, progress) {
+            if (progress == null) return child;
+            return Container(
+              width: width,
+              height: height,
+              color: colors.surfaceVariant,
+              child: Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    value: progress.expectedTotalBytes != null
+                        ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
+                        : null,
+                  ),
+                ),
+              ),
+            );
+          },
           errorBuilder: (_, __, ___) => _buildFallback(colors),
         );
       }
@@ -76,7 +111,7 @@ class StoneImageWidget extends StatelessWidget {
       );
     }
 
-    if (enablePreviewOnTap && (bytes != null || (url != null && url.startsWith('http')))) {
+    if (enablePreviewOnTap && (bytes != null || (effectiveUrl.isNotEmpty && effectiveUrl.startsWith('http')))) {
       return MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
@@ -84,7 +119,7 @@ class StoneImageWidget extends StatelessWidget {
           onTap: () => StoneImagePreviewDialog.show(
             context,
             material: material,
-            imageUrl: url,
+            imageUrl: effectiveUrl.isNotEmpty ? effectiveUrl : rawUrl,
             imageBytes: bytes,
           ),
           child: Stack(
@@ -203,7 +238,8 @@ class _StoneImagePreviewDialogState extends State<StoneImagePreviewDialog> {
     final colors = context.colors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bytes = widget.imageBytes ?? widget.material?.imageBytes;
-    final url = (widget.imageUrl ?? widget.material?.imageUrl)?.trim();
+    final rawUrl = (widget.imageUrl ?? widget.material?.imageUrl)?.trim();
+    final effectiveUrl = StoneImageWidget.resolveImageUrl(rawUrl);
 
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isMobile = screenWidth < 600;
@@ -344,23 +380,33 @@ class _StoneImagePreviewDialogState extends State<StoneImagePreviewDialog> {
                         height: viewH,
                         errorBuilder: (_, __, ___) => _buildError(colors),
                       );
-                    } else if (url != null && url.isNotEmpty && url.startsWith('http')) {
+                    } else if (effectiveUrl.isNotEmpty && effectiveUrl.startsWith('http')) {
                       if (kIsWeb) {
                         displayImage = SizedBox(
                           width: viewW,
                           height: viewH,
                           child: renderWebImage(
-                            url: url,
+                            url: effectiveUrl,
                             fit: BoxFit.contain,
                             errorBuilder: (_) => _buildError(colors),
                           ),
                         );
                       } else {
                         displayImage = Image.network(
-                          url,
+                          effectiveUrl,
                           fit: BoxFit.contain,
                           width: viewW,
                           height: viewH,
+                          loadingBuilder: (ctx, child, progress) {
+                            if (progress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value: progress.expectedTotalBytes != null
+                                    ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            );
+                          },
                           errorBuilder: (_, __, ___) => _buildError(colors),
                         );
                       }
