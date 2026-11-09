@@ -1005,16 +1005,29 @@ class AppState extends ChangeNotifier {
   }
 
   void deleteSlab(String slabId) {
-    final idx = slabs.indexWhere((s) => s.id == slabId || s.slabNo == slabId);
-    if (idx != -1) {
-      final removed = slabs.removeAt(idx);
-      InsforgeService.deleteSlab(removed.slabNo);
-      _recalculateMaterialStats(removed.materialId);
-      LocalStorageService.saveSlabs(slabs);
-      LocalStorageService.saveMaterials(materials);
-      pushFullStateToCloud();
-      notifyListeners();
+    deleteSlabs([slabId]);
+  }
+
+  void deleteSlabs(List<String> slabIds) {
+    if (slabIds.isEmpty) return;
+    final idSet = slabIds.toSet();
+    final affectedMatIds = <String>{};
+    slabs.removeWhere((s) {
+      if (idSet.contains(s.id) || idSet.contains(s.slabNo)) {
+        affectedMatIds.add(s.materialId);
+        InsforgeService.deleteSlab(s.slabNo);
+        return true;
+      }
+      return false;
+    });
+
+    for (final matId in affectedMatIds) {
+      _recalculateMaterialStats(matId);
     }
+    LocalStorageService.saveSlabs(slabs);
+    LocalStorageService.saveMaterials(materials);
+    pushFullStateToCloud();
+    notifyListeners();
   }
 
   void _recalculateMaterialStats(String materialId) {

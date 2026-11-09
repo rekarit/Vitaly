@@ -123,6 +123,14 @@ void main() {
       expect(state.totalSlabsForMaterial('1201'), initialCount + 20);
       expect(state.totalAreaSqmForMaterial('1201'), closeTo(initialArea + (20 * 5.49), 0.01));
       expect(state.slabs.any((s) => s.slabNo == '1201-20'), isTrue);
+
+      // Verify deleteSlabs bulk deletion
+      final slabsToDelete = batch.take(5).map((s) => s.id).toList();
+      state.deleteSlabs(slabsToDelete);
+
+      expect(state.totalSlabsForMaterial('1201'), initialCount + 15);
+      expect(state.totalAreaSqmForMaterial('1201'), closeTo(initialArea + (15 * 5.49), 0.01));
+      expect(state.slabs.any((s) => s.slabNo == '1201-01'), isFalse);
     });
   });
 }

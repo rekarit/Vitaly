@@ -48,6 +48,7 @@ class DataEntryScreenState extends State<DataEntryScreen> {
   final _searchController = TextEditingController();
   final DataEntryFilter _categoryFilter = DataEntryFilter();
   bool _isGridView = true;
+  final Set<String> _selectedSlabIds = {};
 
   @override
   void initState() {
@@ -141,6 +142,7 @@ class DataEntryScreenState extends State<DataEntryScreen> {
       setState(() {
         _selectedCategory = cat;
         _selectedMaterial = foundMat;
+        _selectedSlabIds.clear();
       });
     }
   }
@@ -1297,7 +1299,74 @@ class DataEntryScreenState extends State<DataEntryScreen> {
     final validIndex = newIndex < 0 ? mats.length - 1 : newIndex;
     setState(() {
       _selectedMaterial = mats[validIndex];
+      _selectedSlabIds.clear();
     });
+  }
+
+  Future<void> _confirmBulkDeleteSlabs(AppState appState) async {
+    if (_selectedSlabIds.isEmpty) return;
+    final colors = context.colors;
+    final count = _selectedSlabIds.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colors.error.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.delete_forever_rounded, color: colors.error, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Delete $count Slab${count > 1 ? 's' : ''}?',
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18, color: colors.textPrimary),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to permanently delete $count selected stone slab(s)? '
+          'This will recalculate total material area and sync with the database.',
+          style: GoogleFonts.inter(fontSize: 14, color: colors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: colors.textSecondary)),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colors.error,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            icon: const Icon(Icons.delete_outline_rounded, size: 18),
+            label: Text('Delete $count Slab${count > 1 ? 's' : ''}', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            onPressed: () => Navigator.pop(ctx, true),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      if (!mounted) return;
+      appState.deleteSlabs(_selectedSlabIds.toList());
+      setState(() => _selectedSlabIds.clear());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Successfully deleted $count slab(s)!'),
+          backgroundColor: colors.error,
+        ),
+      );
+    }
   }
 
   void _openEditMaterialDialog(MaterialItem mat) {
@@ -2237,33 +2306,139 @@ class DataEntryScreenState extends State<DataEntryScreen> {
             const SizedBox(height: 28),
 
             // ── Related StoneInventorys Subsection (Matching Photo 2) ────
-            Row(
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Text(
-                  'Related StoneInventorys',
-                  style: GoogleFonts.inter(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: colors.textPrimary,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: colors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: colors.border),
-                  ),
-                  child: Text(
-                    '${slabs.length}',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: colors.textSecondary,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Related StoneInventorys',
+                      style: GoogleFonts.inter(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: colors.textPrimary,
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: colors.border),
+                      ),
+                      child: Text(
+                        '${slabs.length}',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+                if (slabs.isNotEmpty)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Select All Checkbox
+                      Builder(
+                        builder: (_) {
+                          final allSelected = slabs.every((s) => _selectedSlabIds.contains(s.id));
+                          final someSelected = slabs.any((s) => _selectedSlabIds.contains(s.id));
+                          return InkWell(
+                            onTap: () {
+                              setState(() {
+                                if (allSelected) {
+                                  for (final s in slabs) {
+                                    _selectedSlabIds.remove(s.id);
+                                  }
+                                } else {
+                                  for (final s in slabs) {
+                                    _selectedSlabIds.add(s.id);
+                                  }
+                                }
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(6),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: Checkbox(
+                                      value: allSelected ? true : (someSelected ? null : false),
+                                      tristate: true,
+                                      activeColor: colors.primary,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      onChanged: (_) {
+                                        setState(() {
+                                          if (allSelected) {
+                                            for (final s in slabs) {
+                                              _selectedSlabIds.remove(s.id);
+                                            }
+                                          } else {
+                                            for (final s in slabs) {
+                                              _selectedSlabIds.add(s.id);
+                                            }
+                                          }
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Select All',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: colors.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      if (_selectedSlabIds.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        if (AuthService.instance.currentPermissions.canDeleteSlab)
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.delete_outline_rounded, size: 14),
+                            label: Text(
+                              'Delete (${_selectedSlabIds.length})',
+                              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFEF4444),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                            ),
+                            onPressed: () => _confirmBulkDeleteSlabs(appState),
+                          ),
+                        const SizedBox(width: 6),
+                        TextButton(
+                          onPressed: () => setState(() => _selectedSlabIds.clear()),
+                          child: Text(
+                            'Clear',
+                            style: GoogleFonts.inter(fontSize: 12, color: colors.textSecondary),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
               ],
             ),
 
@@ -2303,68 +2478,116 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                 separatorBuilder: (_, __) => Divider(color: colors.border, height: 1),
                 itemBuilder: (ctx, i) {
                   final Slab slab = slabs[i];
+                  final isSelected = _selectedSlabIds.contains(slab.id);
                   final double lCm = slab.lengthCm > 0 ? slab.lengthCm : (slab.lengthMm / 10.0);
                   final double wCm = slab.widthCm > 0 ? slab.widthCm : (slab.widthMm / 10.0);
                   final String lStr = lCm % 1 == 0 ? lCm.toInt().toString() : lCm.toStringAsFixed(1);
                   final String wStr = wCm % 1 == 0 ? wCm.toInt().toString() : wCm.toStringAsFixed(1);
 
-                  return InkWell(
-                    onTap: () => _showSlabDetailDialog(slab, mat),
-                    borderRadius: BorderRadius.circular(8),
-                    hoverColor: colors.surfaceVariant.withValues(alpha: 0.5),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-                      child: Row(
-                        children: [
-                          // Left Thumbnail / Auto-linked Slab Photo from Material
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: colors.surfaceVariant,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: colors.border),
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: isSelected ? colors.primary.withValues(alpha: 0.08) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: InkWell(
+                      onTap: () {
+                        if (_selectedSlabIds.isNotEmpty) {
+                          setState(() {
+                            if (isSelected) {
+                              _selectedSlabIds.remove(slab.id);
+                            } else {
+                              _selectedSlabIds.add(slab.id);
+                            }
+                          });
+                        } else {
+                          _showSlabDetailDialog(slab, mat);
+                        }
+                      },
+                      onLongPress: () {
+                        setState(() {
+                          if (isSelected) {
+                            _selectedSlabIds.remove(slab.id);
+                          } else {
+                            _selectedSlabIds.add(slab.id);
+                          }
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      hoverColor: colors.surfaceVariant.withValues(alpha: 0.5),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                        child: Row(
+                          children: [
+                            // Selection Checkbox
+                            SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: Checkbox(
+                                value: isSelected,
+                                activeColor: colors.primary,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                onChanged: (val) {
+                                  setState(() {
+                                    if (val == true) {
+                                      _selectedSlabIds.add(slab.id);
+                                    } else {
+                                      _selectedSlabIds.remove(slab.id);
+                                    }
+                                  });
+                                },
+                              ),
                             ),
-                            clipBehavior: Clip.antiAlias,
-                            child: _buildSlabThumbnail(slab, mat, colors),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Line 1: CALACATTA GOLD - 1201-03 - 5m²
-                                Text(
-                                  '${mat.name.toUpperCase()} - ${slab.slabNo} - ${slab.areaSqm.round()}m²',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: colors.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                                // Line 2: 234.4×234.4 cm (20mm) · 5.49 sqm
-                                Text(
-                                  '$lStr×$wStr cm (${slab.thicknessMm.round()}mm) · ${slab.areaSqm.toStringAsFixed(2)} sqm',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    color: colors.textSecondary,
-                                  ),
-                                ),
-                              ],
+                            const SizedBox(width: 8),
+                            // Left Thumbnail / Auto-linked Slab Photo from Material
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: colors.surfaceVariant,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: colors.border),
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: _buildSlabThumbnail(slab, mat, colors),
                             ),
-                          ),
-                          // QR Code Preview Badge Button
-                          IconButton(
-                            icon: Icon(Icons.qr_code_2_rounded, size: 22, color: colors.textSecondary),
-                            onPressed: () => _showSlabDetailDialog(slab, mat),
-                            tooltip: 'View QR Code',
-                          ),
-                        ],
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Line 1: CALACATTA GOLD - 1201-03 - 5m²
+                                  Text(
+                                    '${mat.name.toUpperCase()} - ${slab.slabNo} - ${slab.areaSqm.round()}m²',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: colors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  // Line 2: 234.4×234.4 cm (20mm) · 5.49 sqm
+                                  Text(
+                                    '$lStr×$wStr cm (${slab.thicknessMm.round()}mm) · ${slab.areaSqm.toStringAsFixed(2)} sqm',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      color: colors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // QR Code Preview Badge Button
+                            IconButton(
+                              icon: Icon(Icons.qr_code_2_rounded, size: 22, color: colors.textSecondary),
+                              onPressed: () => _showSlabDetailDialog(slab, mat),
+                              tooltip: 'View QR Code',
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );

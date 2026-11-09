@@ -621,6 +621,23 @@ class AvailableStoneScreenState extends State<AvailableStoneScreen> {
                         ),
                       ],
                     ],
+                    if (AuthService.instance.currentPermissions.canDeleteSlab) ...[
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.delete_outline_rounded, size: 16),
+                        label: Text('Delete ($count)'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFEF4444),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        onPressed: () => _confirmBulkDeleteSlabs(
+                          appState,
+                          _selectedSlabIds.toList(),
+                        ),
+                      ),
+                    ],
                     const SizedBox(width: 8),
                     IconButton(
                       icon: Icon(Icons.close_rounded, color: colors.textSecondary),
@@ -635,6 +652,87 @@ class AvailableStoneScreenState extends State<AvailableStoneScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmBulkDeleteSlabs(
+    AppState appState,
+    List<String> slabIds,
+  ) async {
+    if (slabIds.isEmpty) return;
+    final colors = context.colors;
+    final count = slabIds.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colors.error.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.delete_forever_rounded, color: colors.error, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Delete $count Slab${count > 1 ? 's' : ''}?',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: colors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to permanently delete $count selected stone slab(s)? '
+          'This action cannot be undone and will update total stone stock and cloud sync.',
+          style: GoogleFonts.inter(fontSize: 14, color: colors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: colors.textSecondary),
+            ),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colors.error,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            icon: const Icon(Icons.delete_outline_rounded, size: 18),
+            label: Text(
+              'Delete $count Slab${count > 1 ? 's' : ''}',
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      if (!mounted) return;
+      appState.deleteSlabs(slabIds);
+      setState(() {
+        _selectedSlabIds.removeAll(slabIds);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Successfully deleted $count slab(s)!'),
+          backgroundColor: colors.error,
+        ),
+      );
+    }
   }
 
   // ── Top Header Bar ──────────────────────────────────────────────────────────
@@ -1467,27 +1565,55 @@ class AvailableStoneScreenState extends State<AvailableStoneScreen> {
                           Builder(
                             builder: (btnCtx) {
                               final selectedInMat = slabs.where((s) => _selectedSlabIds.contains(s.id)).toList();
-                              return ElevatedButton.icon(
-                                icon: const Icon(Icons.bookmark_add_rounded, size: 14),
-                                label: Text(
-                                  selectedInMat.isNotEmpty
-                                      ? 'Reserve (${selectedInMat.length})'
-                                      : 'Reserve',
-                                  style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFF59E0B),
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                                ),
-                                onPressed: () {
-                                  final targetSlabs = selectedInMat.isNotEmpty ? selectedInMat : slabs;
-                                  ReservationsFormDialog.show(context, preselectedSlabs: targetSlabs);
-                                },
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (AuthService.instance.currentPermissions.canDeleteSlab && selectedInMat.isNotEmpty) ...[
+                                    ElevatedButton.icon(
+                                      icon: const Icon(Icons.delete_outline_rounded, size: 14),
+                                      label: Text(
+                                        'Delete (${selectedInMat.length})',
+                                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFFEF4444),
+                                        foregroundColor: Colors.white,
+                                        elevation: 0,
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                      ),
+                                      onPressed: () => _confirmBulkDeleteSlabs(
+                                        AppStateScope.of(context),
+                                        selectedInMat.map((s) => s.id).toList(),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                  ],
+                                  ElevatedButton.icon(
+                                    icon: const Icon(Icons.bookmark_add_rounded, size: 14),
+                                    label: Text(
+                                      selectedInMat.isNotEmpty
+                                          ? 'Reserve (${selectedInMat.length})'
+                                          : 'Reserve',
+                                      style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFF59E0B),
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                    ),
+                                    onPressed: () {
+                                      final targetSlabs = selectedInMat.isNotEmpty ? selectedInMat : slabs;
+                                      ReservationsFormDialog.show(context, preselectedSlabs: targetSlabs);
+                                    },
+                                  ),
+                                ],
                               );
                             },
                           ),

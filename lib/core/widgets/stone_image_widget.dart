@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/material_item.dart';
 import '../theme/app_theme.dart';
-import 'web_image_renderer.dart';
 
 /// Universal stone image display widget that renders exact material image URLs from CSV / database,
 /// handles uploaded photos, and provides interactive modal preview.
@@ -61,45 +60,33 @@ class StoneImageWidget extends StatelessWidget {
         errorBuilder: (_, __, ___) => _buildFallback(colors),
       );
     } else if (effectiveUrl.isNotEmpty && effectiveUrl.startsWith('http')) {
-      if (kIsWeb) {
-        imageContent = SizedBox(
-          width: width,
-          height: height,
-          child: renderWebImage(
-            url: effectiveUrl,
-            fit: fit,
-            errorBuilder: (_) => _buildFallback(colors),
-          ),
-        );
-      } else {
-        imageContent = Image.network(
-          effectiveUrl,
-          fit: fit,
-          width: width,
-          height: height,
-          loadingBuilder: (ctx, child, progress) {
-            if (progress == null) return child;
-            return Container(
-              width: width,
-              height: height,
-              color: colors.surfaceVariant,
-              child: Center(
-                child: SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    value: progress.expectedTotalBytes != null
-                        ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
-                        : null,
-                  ),
+      imageContent = Image.network(
+        effectiveUrl,
+        fit: fit,
+        width: width,
+        height: height,
+        loadingBuilder: (ctx, child, progress) {
+          if (progress == null) return child;
+          return Container(
+            width: width,
+            height: height,
+            color: colors.surfaceVariant,
+            child: Center(
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  value: progress.expectedTotalBytes != null
+                      ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
+                      : null,
                 ),
               ),
-            );
-          },
-          errorBuilder: (_, __, ___) => _buildFallback(colors),
-        );
-      }
+            ),
+          );
+        },
+        errorBuilder: (_, __, ___) => _buildFallback(colors),
+      );
     } else {
       imageContent = _buildFallback(colors);
     }
@@ -381,35 +368,28 @@ class _StoneImagePreviewDialogState extends State<StoneImagePreviewDialog> {
                         errorBuilder: (_, __, ___) => _buildError(colors),
                       );
                     } else if (effectiveUrl.isNotEmpty && effectiveUrl.startsWith('http')) {
-                      if (kIsWeb) {
-                        displayImage = SizedBox(
-                          width: viewW,
-                          height: viewH,
-                          child: renderWebImage(
-                            url: effectiveUrl,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_) => _buildError(colors),
-                          ),
-                        );
-                      } else {
-                        displayImage = Image.network(
-                          effectiveUrl,
-                          fit: BoxFit.contain,
-                          width: viewW,
-                          height: viewH,
-                          loadingBuilder: (ctx, child, progress) {
-                            if (progress == null) return child;
-                            return Center(
+                      displayImage = Image.network(
+                        effectiveUrl,
+                        fit: BoxFit.contain,
+                        width: viewW,
+                        height: viewH,
+                        loadingBuilder: (ctx, child, progress) {
+                          if (progress == null) return child;
+                          return Center(
+                            child: SizedBox(
+                              width: 36,
+                              height: 36,
                               child: CircularProgressIndicator(
+                                strokeWidth: 3,
                                 value: progress.expectedTotalBytes != null
                                     ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
                                     : null,
                               ),
-                            );
-                          },
-                          errorBuilder: (_, __, ___) => _buildError(colors),
-                        );
-                      }
+                            ),
+                          );
+                        },
+                        errorBuilder: (_, __, ___) => _buildError(colors),
+                      );
                     } else {
                       displayImage = _buildError(colors);
                     }
