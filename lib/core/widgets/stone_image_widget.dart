@@ -3,11 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/material_item.dart';
 import '../theme/app_theme.dart';
-import 'stone_texture_painter.dart';
 import 'web_image_renderer.dart';
 
-/// Universal stone image display widget that renders authentic procedural stone slabs,
-/// handles uploaded photos, and provides interactive tap-to-preview modals.
+/// Universal stone image display widget that renders exact material image URLs from CSV / database,
+/// handles uploaded photos, and provides interactive modal preview.
 class StoneImageWidget extends StatelessWidget {
   final MaterialItem? material;
   final String? imageUrl;
@@ -30,39 +29,11 @@ class StoneImageWidget extends StatelessWidget {
     this.enablePreviewOnTap = false,
   });
 
-  /// High-resolution verified texture photo for each stone category when material image is empty
-  static String getDefaultImageUrlForCategory(String? categoryName) {
-    if (categoryName == null) {
-      return 'https://vitalygroup.co/wp-content/uploads/2026/02/CALACATTA-GOLD-Quartize-polish-copy.jpg';
-    }
-    final lower = categoryName.toLowerCase();
-    if (lower.contains('quartzite') || lower.contains('quartz')) {
-      return 'https://vitalygroup.co/wp-content/uploads/2026/02/CALACATTA-GOLD-Quartize-polish-copy.jpg';
-    } else if (lower.contains('marble')) {
-      return 'https://vitalygroup.co/wp-content/uploads/2026/02/SILK-EMPERADOR-Marble-Polish-copy.jpg';
-    } else if (lower.contains('granite')) {
-      return 'https://vitalygroup.co/wp-content/uploads/2026/02/BLACK-FOREST-Granite-Polish-copy.jpg';
-    } else if (lower.contains('onyx')) {
-      return 'https://vitalygroup.co/wp-content/uploads/2026/06/Onyx-Vitaly-12-scaled-e1782737433318-2048x1205.png';
-    } else if (lower.contains('travertine')) {
-      return 'https://vitalygroup.co/wp-content/uploads/2026/02/CLASSIC-BEIGE-Travertine-polish-copy.jpg';
-    } else if (lower.contains('crystal') || lower.contains('semi precious')) {
-      return 'https://vitalygroup.co/wp-content/uploads/2026/06/IMG_0333.jpeg';
-    }
-    return 'https://vitalygroup.co/wp-content/uploads/2026/02/CALACATTA-GOLD-Quartize-polish-copy.jpg';
-  }
-
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final bytes = imageBytes ?? material?.imageBytes;
-    
-    // Resolve URL
-    String? url = imageUrl ?? material?.imageUrl;
-    if (url != null && (!url.startsWith('http') || url.contains('vitalygroup.co'))) {
-      // vitalygroup.co blocks requests with 403 StackProtect anti-bot barrier
-      // Use the native, high-performance StoneTextureWidget instead
-      url = null;
-    }
+    final url = (imageUrl ?? material?.imageUrl)?.trim();
 
     Widget imageContent;
 
@@ -72,30 +43,30 @@ class StoneImageWidget extends StatelessWidget {
         fit: fit,
         width: width,
         height: height,
-        errorBuilder: (_, __, ___) => _buildTextureSlab(),
+        errorBuilder: (_, __, ___) => _buildFallback(colors),
       );
-    } else if (url != null && url.isNotEmpty) {
+    } else if (url != null && url.isNotEmpty && url.startsWith('http')) {
       if (kIsWeb) {
         imageContent = SizedBox(
           width: width,
           height: height,
           child: renderWebImage(
-            url: url.trim(),
+            url: url,
             fit: fit,
-            errorBuilder: (_) => _buildTextureSlab(),
+            errorBuilder: (_) => _buildFallback(colors),
           ),
         );
       } else {
         imageContent = Image.network(
-          url.trim(),
+          url,
           fit: fit,
           width: width,
           height: height,
-          errorBuilder: (_, __, ___) => _buildTextureSlab(),
+          errorBuilder: (_, __, ___) => _buildFallback(colors),
         );
       }
     } else {
-      imageContent = _buildTextureSlab();
+      imageContent = _buildFallback(colors);
     }
 
     if (borderRadius != null) {
@@ -105,7 +76,7 @@ class StoneImageWidget extends StatelessWidget {
       );
     }
 
-    if (enablePreviewOnTap) {
+    if (enablePreviewOnTap && (bytes != null || (url != null && url.startsWith('http')))) {
       return MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
@@ -146,20 +117,23 @@ class StoneImageWidget extends StatelessWidget {
     return imageContent;
   }
 
-  Widget _buildTextureSlab() {
-    return StoneTextureWidget(
-      categoryName: material?.categoryId,
-      stoneType: material?.stoneType,
-      materialName: material?.name,
-      materialCode: material?.materialCode,
-      finish: material?.finish ?? 'Polish',
+  Widget _buildFallback(AppColorsExtension colors) {
+    return Container(
       width: width,
       height: height,
+      color: colors.surfaceVariant,
+      child: Center(
+        child: Icon(
+          Icons.terrain_rounded,
+          size: (height != null && height! < 50) ? 20 : 28,
+          color: colors.primary.withValues(alpha: 0.6),
+        ),
+      ),
     );
   }
 }
 
-/// Full screen rich modal preview for stone textures and photographs with interactive zoom & pan.
+/// Full screen rich modal preview for the exact stone photo from CSV.
 class StoneImagePreviewDialog extends StatefulWidget {
   final MaterialItem? material;
   final String? imageUrl;
@@ -229,11 +203,7 @@ class _StoneImagePreviewDialogState extends State<StoneImagePreviewDialog> {
     final colors = context.colors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bytes = widget.imageBytes ?? widget.material?.imageBytes;
-    
-    String? url = widget.imageUrl ?? widget.material?.imageUrl;
-    if (url != null && (!url.startsWith('http') || url.contains('vitalygroup.co'))) {
-      url = null;
-    }
+    final url = (widget.imageUrl ?? widget.material?.imageUrl)?.trim();
 
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isMobile = screenWidth < 600;
@@ -372,8 +342,9 @@ class _StoneImagePreviewDialogState extends State<StoneImagePreviewDialog> {
                         fit: BoxFit.contain,
                         width: viewW,
                         height: viewH,
+                        errorBuilder: (_, __, ___) => _buildError(colors),
                       );
-                    } else if (url != null && url.startsWith('http')) {
+                    } else if (url != null && url.isNotEmpty && url.startsWith('http')) {
                       if (kIsWeb) {
                         displayImage = SizedBox(
                           width: viewW,
@@ -381,7 +352,7 @@ class _StoneImagePreviewDialogState extends State<StoneImagePreviewDialog> {
                           child: renderWebImage(
                             url: url,
                             fit: BoxFit.contain,
-                            errorBuilder: (_) => _buildTexturePreview(viewW, viewH),
+                            errorBuilder: (_) => _buildError(colors),
                           ),
                         );
                       } else {
@@ -390,11 +361,11 @@ class _StoneImagePreviewDialogState extends State<StoneImagePreviewDialog> {
                           fit: BoxFit.contain,
                           width: viewW,
                           height: viewH,
-                          errorBuilder: (_, __, ___) => _buildTexturePreview(viewW, viewH),
+                          errorBuilder: (_, __, ___) => _buildError(colors),
                         );
                       }
                     } else {
-                      displayImage = _buildTexturePreview(viewW, viewH);
+                      displayImage = _buildError(colors);
                     }
 
                     return InteractiveViewer(
@@ -464,49 +435,28 @@ class _StoneImagePreviewDialogState extends State<StoneImagePreviewDialog> {
     );
   }
 
-  Widget _buildTexturePreview(double width, double height) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        StoneTextureWidget(
-          categoryName: widget.material?.categoryId,
-          stoneType: widget.material?.stoneType,
-          materialName: widget.material?.name,
-          materialCode: widget.material?.materialCode,
-          finish: widget.material?.finish ?? 'Polish',
-          width: width,
-          height: height,
-        ),
-        // Natural Stone Slab Watermark Specimen Badge in bottom corner
-        Positioned(
-          left: 16,
-          bottom: 16,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.7),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.auto_awesome, size: 12, color: Color(0xFFF59E0B)),
-                const SizedBox(width: 6),
-                Text(
-                  '${widget.material?.stoneType ?? "NATURAL"} • ${widget.material?.finish ?? "POLISH"} SLAB',
-                  style: GoogleFonts.robotoMono(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
+  Widget _buildError(AppColorsExtension colors) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.image_not_supported_rounded, size: 48, color: colors.textSecondary),
+          const SizedBox(height: 12),
+          Text(
+            widget.material?.name.toUpperCase() ?? 'No Image Available',
+            style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: colors.textPrimary),
           ),
-        ),
-      ],
+          if (widget.material?.imageUrl != null && widget.material!.imageUrl!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+              child: SelectableText(
+                widget.material!.imageUrl!,
+                style: GoogleFonts.robotoMono(fontSize: 11, color: colors.textSecondary),
+                textAlign: TextAlign.center,
+              ),
+            ),
+        ],
+      ),
     );
   }
 

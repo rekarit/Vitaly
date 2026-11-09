@@ -31,6 +31,8 @@ Widget renderWebImage({
         img.style.pointerEvents = 'none';
         img.style.userSelect = 'none';
         img.loading = 'eager';
+        // Suppress referer so external hosts (vitalygroup.co) do not block hotlinking from GitHub Pages
+        img.referrerPolicy = 'no-referrer';
         return img;
       },
     );

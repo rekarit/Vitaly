@@ -9,7 +9,6 @@ import '../../core/state/app_state.dart';
 import '../../core/state/app_state_scope.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/responsive.dart';
-import '../../core/widgets/stone_image_widget.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────
 /// Materials Form Dialog
@@ -811,11 +810,12 @@ class _MaterialFormDialogState extends State<MaterialFormDialog> {
                   _uploadedImageBytes!,
                   fit: BoxFit.cover,
                 )
-              : StoneImageWidget(
-                  imageUrl: StoneImageWidget.getDefaultImageUrlForCategory(_selectedCategory.categoryName),
-                  height: 220,
-                  fit: BoxFit.cover,
-                  enablePreviewOnTap: true,
+              : Center(
+                  child: Icon(
+                    Icons.terrain_rounded,
+                    size: 48,
+                    color: colors.primary.withValues(alpha: 0.5),
+                  ),
                 ),
         ),
       ],
