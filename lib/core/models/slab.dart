@@ -30,6 +30,18 @@ class Slab {
   final String? inventoryId;          // AppSheet InventoryID (e.g. 'ef219868' - 2 letters + 6 digits)
   final String? customQrData;         // Explicit unique QR payload
   final String? customPrintLabelText; // Explicit print label formula
+  final String? reservedFor;          // AppSheet ReservedFor
+  final String? reservedFrom;         // AppSheet ReservedFrom
+  final String? reservedUntil;        // AppSheet ReservedUntil
+  final String? reservationExpired;   // AppSheet ReservationExpired ('Yes', etc.)
+  final String? pickedUp;             // AppSheet PickedUp
+  final String? pickupDate;           // AppSheet PickupDate
+  final String? signatureNote;        // AppSheet SignatureNote
+  final String? locationType;         // AppSheet LocationType ('Yard', 'Field')
+  final bool? visibleInCatalog;       // AppSheet VisibleInCatalog (TRUE/FALSE)
+  final String? sourceReturnId;       // AppSheet SourceReturnID
+  final String? scanCode;             // AppSheet ScanCode
+  final int? quantity;                // AppSheet Quantity
 
   const Slab({
     required this.id,
@@ -58,6 +70,18 @@ class Slab {
     this.inventoryId,
     this.customQrData,
     this.customPrintLabelText,
+    this.reservedFor,
+    this.reservedFrom,
+    this.reservedUntil,
+    this.reservationExpired,
+    this.pickedUp,
+    this.pickupDate,
+    this.signatureNote,
+    this.locationType,
+    this.visibleInCatalog,
+    this.sourceReturnId,
+    this.scanCode,
+    this.quantity,
   })  : slabNo = slabNo ?? id,
         bundleNumber = bundleNumber ?? (batchId ?? 'BND-$materialId'),
         slabNumber = slabNumber ?? 1,
@@ -125,6 +149,18 @@ class Slab {
     String? inventoryId,
     String? customQrData,
     String? customPrintLabelText,
+    String? reservedFor,
+    String? reservedFrom,
+    String? reservedUntil,
+    String? reservationExpired,
+    String? pickedUp,
+    String? pickupDate,
+    String? signatureNote,
+    String? locationType,
+    bool? visibleInCatalog,
+    String? sourceReturnId,
+    String? scanCode,
+    int? quantity,
   }) {
     final computedLengthMm = lengthMm ?? (lengthCm != null ? lengthCm * 10 : this.lengthMm);
     final computedWidthMm = widthMm ?? (widthCm != null ? widthCm * 10 : this.widthMm);
@@ -153,6 +189,18 @@ class Slab {
       inventoryId: inventoryId ?? this.inventoryId,
       customQrData: customQrData ?? this.customQrData,
       customPrintLabelText: customPrintLabelText ?? this.customPrintLabelText,
+      reservedFor: reservedFor ?? this.reservedFor,
+      reservedFrom: reservedFrom ?? this.reservedFrom,
+      reservedUntil: reservedUntil ?? this.reservedUntil,
+      reservationExpired: reservationExpired ?? this.reservationExpired,
+      pickedUp: pickedUp ?? this.pickedUp,
+      pickupDate: pickupDate ?? this.pickupDate,
+      signatureNote: signatureNote ?? this.signatureNote,
+      locationType: locationType ?? this.locationType,
+      visibleInCatalog: visibleInCatalog ?? this.visibleInCatalog,
+      sourceReturnId: sourceReturnId ?? this.sourceReturnId,
+      scanCode: scanCode ?? this.scanCode,
+      quantity: quantity ?? this.quantity,
     );
   }
 
@@ -177,10 +225,22 @@ class Slab {
         'inventoryId': inventoryId,
         'customQrData': customQrData,
         'customPrintLabelText': customPrintLabelText,
+        if (reservedFor != null) 'reservedFor': reservedFor,
+        if (reservedFrom != null) 'reservedFrom': reservedFrom,
+        if (reservedUntil != null) 'reservedUntil': reservedUntil,
+        if (reservationExpired != null) 'reservationExpired': reservationExpired,
+        if (pickedUp != null) 'pickedUp': pickedUp,
+        if (pickupDate != null) 'pickupDate': pickupDate,
+        if (signatureNote != null) 'signatureNote': signatureNote,
+        if (locationType != null) 'locationType': locationType,
+        if (visibleInCatalog != null) 'visibleInCatalog': visibleInCatalog,
+        if (sourceReturnId != null) 'sourceReturnId': sourceReturnId,
+        if (scanCode != null) 'scanCode': scanCode,
+        if (quantity != null) 'quantity': quantity,
       };
 
   factory Slab.fromJson(Map<String, dynamic> json) {
-    final statusStr = json['status']?.toString() ?? 'available';
+    final statusStr = (json['status']?.toString() ?? 'available').toLowerCase();
     SlabStatus status = SlabStatus.available;
     if (statusStr.contains('unavail')) {
       status = SlabStatus.unavailable;
@@ -215,6 +275,22 @@ class Slab {
       inventoryId: json['inventoryId']?.toString(),
       customQrData: json['customQrData']?.toString(),
       customPrintLabelText: json['customPrintLabelText']?.toString(),
+      reservedFor: json['reservedFor']?.toString(),
+      reservedFrom: json['reservedFrom']?.toString(),
+      reservedUntil: json['reservedUntil']?.toString(),
+      reservationExpired: json['reservationExpired']?.toString(),
+      pickedUp: json['pickedUp']?.toString(),
+      pickupDate: json['pickupDate']?.toString(),
+      signatureNote: json['signatureNote']?.toString(),
+      locationType: json['locationType']?.toString(),
+      visibleInCatalog: json['visibleInCatalog'] is bool
+          ? json['visibleInCatalog'] as bool
+          : (json['visibleInCatalog']?.toString().toUpperCase() == 'TRUE'
+              ? true
+              : (json['visibleInCatalog']?.toString().toUpperCase() == 'FALSE' ? false : null)),
+      sourceReturnId: json['sourceReturnId']?.toString(),
+      scanCode: json['scanCode']?.toString(),
+      quantity: (json['quantity'] as num?)?.toInt() ?? int.tryParse(json['quantity']?.toString() ?? ''),
     );
   }
 

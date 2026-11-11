@@ -93,28 +93,7 @@ class LocalStorageService {
   static Future<void> saveSlabs(List<Slab> list) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final data = list.map((s) => {
-        'id': s.id,
-        'materialId': s.materialId,
-        'slabNo': s.slabNo,
-        'bundleNumber': s.bundleNumber,
-        'slabNumber': s.slabNumber,
-        'lengthMm': s.lengthMm,
-        'widthMm': s.widthMm,
-        'thicknessMm': s.thicknessMm,
-        'areaSqm': s.areaSqm,
-        'status': s.status.name,
-        'defectNotes': s.defectNotes,
-        'hasDefect': s.hasDefect,
-        'warehouseLocation': s.warehouseLocation,
-        'receivedDate': s.receivedDate.toIso8601String(),
-        'reservedPrice': s.reservedPrice,
-        'batchId': s.batchId,
-        'photoUrl': s.photoUrl,
-        'inventoryId': s.inventoryId,
-        'customQrData': s.customQrData,
-        'customPrintLabelText': s.customPrintLabelText,
-      }).toList();
+      final data = list.map((s) => s.toJson()).toList();
       await prefs.setString(_keySlabs, jsonEncode(data));
     } catch (e) {
       debugPrint('Error saving slabs locally: $e');
@@ -127,44 +106,9 @@ class LocalStorageService {
       final str = prefs.getString(_keySlabs);
       if (str == null || str.isEmpty) return [];
       final List raw = jsonDecode(str);
-      return raw.map((json) {
-        final statusStr = json['status']?.toString() ?? 'available';
-        SlabStatus status = SlabStatus.available;
-        if (statusStr.contains('unavail')) {
-          status = SlabStatus.unavailable;
-        } else if (statusStr.contains('reserv')) {
-          status = SlabStatus.reserved;
-        } else if (statusStr.contains('sold')) {
-          status = SlabStatus.sold;
-        } else if (statusStr.contains('damag')) {
-          status = SlabStatus.damaged;
-        }
-
-        return Slab(
-          id: json['id']?.toString() ?? '',
-          materialId: json['materialId']?.toString() ?? '',
-          slabNo: json['slabNo']?.toString(),
-          bundleNumber: json['bundleNumber']?.toString(),
-          slabNumber: (json['slabNumber'] as num?)?.toInt() ?? 1,
-          lengthMm: (json['lengthMm'] as num?)?.toDouble(),
-          widthMm: (json['widthMm'] as num?)?.toDouble(),
-          thicknessMm: (json['thicknessMm'] as num?)?.toDouble(),
-          areaSqm: (json['areaSqm'] as num?)?.toDouble(),
-          status: status,
-          defectNotes: json['defectNotes']?.toString(),
-          hasDefect: json['hasDefect'] == true,
-          warehouseLocation: json['warehouseLocation']?.toString(),
-          receivedDate: json['receivedDate'] != null
-              ? DateTime.tryParse(json['receivedDate'].toString())
-              : null,
-          reservedPrice: (json['reservedPrice'] as num?)?.toDouble(),
-          batchId: json['batchId']?.toString(),
-          photoUrl: json['photoUrl']?.toString(),
-          inventoryId: json['inventoryId']?.toString(),
-          customQrData: json['customQrData']?.toString(),
-          customPrintLabelText: json['customPrintLabelText']?.toString(),
-        );
-      }).toList();
+      return raw
+          .map((json) => Slab.fromJson(Map<String, dynamic>.from(json as Map)))
+          .toList();
     } catch (e) {
       debugPrint('Error loading slabs locally: $e');
       return [];

@@ -76,7 +76,8 @@ class _SlabFormDialogState extends State<SlabFormDialog> {
   SlabStatus _selectedStatus = SlabStatus.available;
 
   final List<String> _rackOptions = [
-    'Warehouse', 'Showroom', 'RACK-A1', 'RACK-A2', 'RACK-A3',
+    '',
+    'WAREHOUSE', 'SHOWROOM', 'Warehouse', 'Showroom', 'RACK-A1', 'RACK-A2', 'RACK-A3',
     'RACK-B1', 'RACK-B2', 'RACK-B3',
     'RACK-C1', 'RACK-C2', 'RACK-C3',
     'RACK-D1', 'RACK-D2', 'RACK-D3',
@@ -115,6 +116,9 @@ class _SlabFormDialogState extends State<SlabFormDialog> {
       _batchIdCtrl = TextEditingController(text: slab.batchId ?? 'BATCH-${_selectedMaterial.materialCode}-01');
       _printLabelTextCtrl = TextEditingController(text: slab.printLabelText);
       _selectedRackCode = slab.warehouseLocation;
+      if (!_rackOptions.contains(_selectedRackCode)) {
+        _rackOptions.insert(0, _selectedRackCode);
+      }
       _receivedDate = slab.receivedDate;
       _photoBytes = slab.photoBytes ?? _selectedMaterial.imageBytes;
       _photoUrl = slab.photoUrl ?? _selectedMaterial.imageUrl;
@@ -749,7 +753,7 @@ class _SlabFormDialogState extends State<SlabFormDialog> {
                               return DropdownMenuItem<String>(
                                 value: rack,
                                 child: Text(
-                                  rack,
+                                  rack.isEmpty ? '(Unassigned)' : rack,
                                   style: GoogleFonts.inter(fontSize: 14, color: colors.textPrimary),
                                 ),
                               );

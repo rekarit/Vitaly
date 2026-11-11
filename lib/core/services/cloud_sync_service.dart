@@ -26,6 +26,9 @@ class CloudSyncService {
   static Map<String, dynamic>? _pendingPayload;
   static Timer? _debounceTimer;
 
+  static bool get hasPendingWrite =>
+      _currentPush != null || _pendingPayload != null || (_debounceTimer?.isActive ?? false);
+
   // Browser-safe headers: ONLY Authorization & Content-Type
   // DO NOT add custom 'Accept' header because browsers fail CORS preflight if Accept is not in server's Access-Control-Allow-Headers!
   static Map<String, String> get _headers => {

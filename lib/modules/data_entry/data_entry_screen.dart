@@ -2911,26 +2911,78 @@ class DataEntryScreenState extends State<DataEntryScreen> {
 
                             // RackCode (Clickable drilldown matching Screenshot 3 & 4)
                             InkWell(
-                              onTap: () {
-                                final appState = AppStateScope.read(context);
-                                final rack = appState.rackByCode(currentSlab.warehouseLocation);
-                                RackDetailDialog.show(context, rack);
-                              },
+                              onTap: currentSlab.warehouseLocation.trim().isEmpty
+                                  ? null
+                                  : () {
+                                      final appState = AppStateScope.read(context);
+                                      final rack = appState.rackByCode(currentSlab.warehouseLocation);
+                                      RackDetailDialog.show(context, rack);
+                                    },
                               borderRadius: BorderRadius.circular(4),
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 2),
                                 child: _buildAppSheetDetailItem(
                                   'RackCode',
-                                  currentSlab.warehouseLocation,
-                                  trailingIcon: Icons.chevron_right,
+                                  currentSlab.warehouseLocation.trim().isEmpty ? '(Unassigned)' : currentSlab.warehouseLocation,
+                                  trailingIcon: currentSlab.warehouseLocation.trim().isEmpty ? null : Icons.chevron_right,
                                 ),
                               ),
                             ),
                             const SizedBox(height: 16),
 
-                            // Status
-                            _buildAppSheetDetailItem('Status', 'In Stock'),
+                            // Status (exact mapped status)
+                            _buildAppSheetDetailItem(
+                              'Status',
+                              switch (currentSlab.status) {
+                                SlabStatus.available => 'In Stock',
+                                SlabStatus.reserved => 'Reserved',
+                                SlabStatus.sold => 'Sold',
+                                SlabStatus.damaged => 'Damaged',
+                                SlabStatus.unavailable => 'Unavailable',
+                              },
+                            ),
                             const SizedBox(height: 16),
+
+                            if (currentSlab.reservedFor != null && currentSlab.reservedFor!.trim().isNotEmpty) ...[
+                              _buildAppSheetDetailItem('ReservedFor', currentSlab.reservedFor!),
+                              const SizedBox(height: 16),
+                            ],
+
+                            _buildAppSheetDetailItem(
+                              'ReceivedDate',
+                              currentSlab.receivedDate.toIso8601String().substring(0, 10),
+                            ),
+                            const SizedBox(height: 16),
+
+                            if (currentSlab.defectNotes != null && currentSlab.defectNotes!.trim().isNotEmpty) ...[
+                              _buildAppSheetDetailItem('Notes', currentSlab.defectNotes!),
+                              const SizedBox(height: 16),
+                            ],
+
+                            if (currentSlab.batchId != null && currentSlab.batchId!.trim().isNotEmpty) ...[
+                              _buildAppSheetDetailItem('BatchID', currentSlab.batchId!),
+                              const SizedBox(height: 16),
+                            ],
+
+                            if (currentSlab.locationType != null && currentSlab.locationType!.trim().isNotEmpty) ...[
+                              _buildAppSheetDetailItem('LocationType', currentSlab.locationType!),
+                              const SizedBox(height: 16),
+                            ],
+
+                            if (currentSlab.visibleInCatalog != null) ...[
+                              _buildAppSheetDetailItem('VisibleInCatalog', currentSlab.visibleInCatalog! ? 'TRUE' : 'FALSE'),
+                              const SizedBox(height: 16),
+                            ],
+
+                            if (currentSlab.pickupDate != null && currentSlab.pickupDate!.trim().isNotEmpty) ...[
+                              _buildAppSheetDetailItem('PickupDate', currentSlab.pickupDate!),
+                              const SizedBox(height: 16),
+                            ],
+
+                            if (currentSlab.quantity != null) ...[
+                              _buildAppSheetDetailItem('Quantity', currentSlab.quantity.toString()),
+                              const SizedBox(height: 16),
+                            ],
 
                             // Slab / Material Photo (Auto-linked)
                             Text(

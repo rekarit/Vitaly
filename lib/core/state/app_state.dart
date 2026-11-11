@@ -140,6 +140,25 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  static String _slabUniqueKey(Slab s) {
+    if (s.inventoryId != null && s.inventoryId!.trim().isNotEmpty) {
+      return s.inventoryId!.trim();
+    }
+    return s.id.isNotEmpty ? s.id : s.slabNo;
+  }
+
+  static bool _isSameSlabRecord(Slab a, Slab b) {
+    final aInv = a.inventoryId?.trim() ?? '';
+    final bInv = b.inventoryId?.trim() ?? '';
+    if (aInv.isNotEmpty && bInv.isNotEmpty) {
+      return aInv == bInv;
+    }
+    if (a.id.isNotEmpty && b.id.isNotEmpty) {
+      return a.id == b.id;
+    }
+    return a.slabNo == b.slabNo;
+  }
+
   Future<void> fetchFromInsforge({bool silent = false}) async {
     if (!silent) {
       isLoadingFromBackend = true;
@@ -200,75 +219,67 @@ class AppState extends ChangeNotifier {
           }
         }
 
-        // Slabs from Cloud
-        if (cloudDb['slabs'] is List) {
+        // Slabs from Cloud (authoritative when no local write is pending; keyed by InventoryID/id so duplicate SlabNos never overwrite!)
+        if (cloudDb['slabs'] is List && !CloudSyncService.hasPendingWrite) {
           final List sList = cloudDb['slabs'];
-          final map = {for (final s in slabs) s.slabNo: s};
+          final map = <String, Slab>{};
           for (final item in sList) {
             try {
               final sl = Slab.fromJson(Map<String, dynamic>.from(item as Map));
-              map[sl.slabNo] = sl;
+              map[_slabUniqueKey(sl)] = sl;
             } catch (_) {}
           }
-          if (map.isNotEmpty) {
-            slabs.clear();
-            slabs.addAll(map.values);
-            for (final m in materials) {
-              _recalculateMaterialStats(m.id);
-            }
-            LocalStorageService.saveSlabs(slabs);
+          slabs.clear();
+          slabs.addAll(map.values);
+          for (final m in materials) {
+            _recalculateMaterialStats(m.id);
           }
+          LocalStorageService.saveSlabs(slabs);
         }
 
         // Customers from Cloud
-        if (cloudDb['customers'] is List) {
+        if (cloudDb['customers'] is List && !CloudSyncService.hasPendingWrite) {
           final List custList = cloudDb['customers'];
-          final map = {for (final c in customers) c.id: c};
+          final map = <String, Customer>{};
           for (final item in custList) {
             try {
               final c = Customer.fromJson(Map<String, dynamic>.from(item as Map));
               map[c.id] = c;
             } catch (_) {}
           }
-          if (map.isNotEmpty) {
-            customers.clear();
-            customers.addAll(map.values);
-            LocalStorageService.saveCustomers(customers);
-          }
+          customers.clear();
+          customers.addAll(map.values);
+          LocalStorageService.saveCustomers(customers);
         }
 
         // Reservations from Cloud
-        if (cloudDb['reservations'] is List) {
+        if (cloudDb['reservations'] is List && !CloudSyncService.hasPendingWrite) {
           final List rList = cloudDb['reservations'];
-          final map = {for (final r in reservations) r.id: r};
+          final map = <String, Reservation>{};
           for (final item in rList) {
             try {
               final r = Reservation.fromJson(Map<String, dynamic>.from(item as Map));
               map[r.id] = r;
             } catch (_) {}
           }
-          if (map.isNotEmpty) {
-            reservations.clear();
-            reservations.addAll(map.values);
-            LocalStorageService.saveReservations(reservations);
-          }
+          reservations.clear();
+          reservations.addAll(map.values);
+          LocalStorageService.saveReservations(reservations);
         }
 
         // Sales from Cloud
-        if (cloudDb['sales'] is List) {
+        if (cloudDb['sales'] is List && !CloudSyncService.hasPendingWrite) {
           final List saList = cloudDb['sales'];
-          final map = {for (final s in sales) s.id: s};
+          final map = <String, Sale>{};
           for (final item in saList) {
             try {
               final s = Sale.fromJson(Map<String, dynamic>.from(item as Map));
               map[s.id] = s;
             } catch (_) {}
           }
-          if (map.isNotEmpty) {
-            sales.clear();
-            sales.addAll(map.values);
-            LocalStorageService.saveSales(sales);
-          }
+          sales.clear();
+          sales.addAll(map.values);
+          LocalStorageService.saveSales(sales);
         }
       }
 
@@ -303,9 +314,9 @@ class AppState extends ChangeNotifier {
 
       final remoteSlabs = await InsforgeService.getStoneInventory();
       if (remoteSlabs.isNotEmpty) {
-        final map = {for (final s in slabs) s.slabNo: s};
+        final map = {for (final s in slabs) _slabUniqueKey(s): s};
         for (final rs in remoteSlabs) {
-          map[rs.slabNo] = rs;
+          map[_slabUniqueKey(rs)] = rs;
         }
         slabs.clear();
         slabs.addAll(map.values);
@@ -864,7 +875,7 @@ class AppState extends ChangeNotifier {
   }
 
   void addSlab(Slab s) {
-    final idx = slabs.indexWhere((item) => item.id == s.id || item.slabNo == s.slabNo);
+    final idx = slabs.indexWhere((item) => _isSameSlabRecord(item, s));
     final isNew = idx == -1;
     if (!isNew) {
       slabs[idx] = s;
@@ -887,7 +898,7 @@ class AppState extends ChangeNotifier {
   void addSlabs(List<Slab> newSlabs) {
     if (newSlabs.isEmpty) return;
     for (final s in newSlabs) {
-      final idx = slabs.indexWhere((item) => item.id == s.id || item.slabNo == s.slabNo);
+      final idx = slabs.indexWhere((item) => _isSameSlabRecord(item, s));
       if (idx != -1) {
         slabs[idx] = s;
       } else {
@@ -1013,7 +1024,9 @@ class AppState extends ChangeNotifier {
     final idSet = slabIds.toSet();
     final affectedMatIds = <String>{};
     slabs.removeWhere((s) {
-      if (idSet.contains(s.id) || idSet.contains(s.slabNo)) {
+      final matchesUniqueId = idSet.contains(s.id) || (s.inventoryId != null && idSet.contains(s.inventoryId));
+      final matchesFallbackSlabNo = idSet.contains(s.slabNo) && !slabs.any((other) => idSet.contains(other.id));
+      if (matchesUniqueId || matchesFallbackSlabNo) {
         affectedMatIds.add(s.materialId);
         InsforgeService.deleteSlab(s.slabNo);
         return true;
@@ -1185,7 +1198,10 @@ class AppState extends ChangeNotifier {
 
   // -- Slab status transitions -----------------------------------------------
   void _updateSlab(String slabId, Slab Function(Slab) transform) {
-    final i = slabs.indexWhere((s) => s.id == slabId || s.slabNo == slabId);
+    var i = slabs.indexWhere((s) => s.id == slabId || s.inventoryId == slabId);
+    if (i == -1) {
+      i = slabs.indexWhere((s) => s.slabNo == slabId);
+    }
     if (i == -1) return;
     final updated = transform(slabs[i]);
     slabs[i] = updated;

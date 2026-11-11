@@ -132,5 +132,44 @@ void main() {
       expect(state.totalAreaSqmForMaterial('1201'), closeTo(initialArea + (15 * 5.49), 0.01));
       expect(state.slabs.any((s) => s.slabNo == '1201-01'), isFalse);
     });
+
+    test('AppState preserves distinct InventoryIDs even with same SlabNo and serializes metadata', () {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      final state = AppState();
+      final s1 = Slab(
+        id: '230df306',
+        inventoryId: '230df306',
+        materialId: '1201',
+        slabNo: '1201-09',
+        lengthMm: 2000,
+        widthMm: 1550,
+        areaSqm: 3.10,
+        warehouseLocation: 'SHOWROOM',
+        locationType: 'Yard',
+        visibleInCatalog: true,
+      );
+      final s2 = Slab(
+        id: 'fd6f7d7c',
+        inventoryId: 'fd6f7d7c',
+        materialId: '1201',
+        slabNo: '1201-09',
+        lengthMm: 2344,
+        widthMm: 2342,
+        areaSqm: 5.49,
+        warehouseLocation: 'WAREHOUSE',
+        locationType: 'Yard',
+        visibleInCatalog: true,
+        quantity: 1,
+      );
+
+      state.addSlabs([s1, s2]);
+
+      expect(state.slabs.where((s) => s.slabNo == '1201-09').length, 2);
+      final roundTrip = Slab.fromJson(s2.toJson());
+      expect(roundTrip.inventoryId, 'fd6f7d7c');
+      expect(roundTrip.locationType, 'Yard');
+      expect(roundTrip.visibleInCatalog, isTrue);
+      expect(roundTrip.quantity, 1);
+    });
   });
 }
