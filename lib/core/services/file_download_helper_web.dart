@@ -23,3 +23,4 @@ void openPdfInNewTab(Uint8List bytes) {
   final url = web.URL.createObjectURL(blob);
   web.window.open(url, '_blank');
 }
+

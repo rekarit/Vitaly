@@ -769,9 +769,6 @@ class _LabelPreviewGridCard extends StatelessWidget {
     final materialName = material?.name ?? 'Natural Stone';
     final finishName = material?.finish ?? 'Leather';
 
-    // QR short hex string shown below the QR code in screenshot e.g. "hv144069"
-    final shortQr = slab.qrCode.length > 8 ? slab.qrCode.substring(slab.qrCode.length - 8) : slab.qrCode;
-
     return Container(
       decoration: BoxDecoration(
         color: colors.surface,
@@ -860,42 +857,29 @@ class _LabelPreviewGridCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
 
-                // Right QR Code Block
-                Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: isDark ? colors.surfaceVariant : Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: colors.border),
-                      ),
-                      child: QrImageView(
-                        data: slab.qrCode,
-                        version: QrVersions.auto,
-                        size: 74,
-                        backgroundColor: Colors.transparent,
-                        eyeStyle: QrEyeStyle(
-                          eyeShape: QrEyeShape.square,
-                          color: isDark ? colors.textPrimary : Colors.black,
-                        ),
-                        dataModuleStyle: QrDataModuleStyle(
-                          dataModuleShape: QrDataModuleShape.square,
-                          color: isDark ? colors.textPrimary : Colors.black,
-                        ),
-                        padding: EdgeInsets.zero,
-                      ),
+                // Right QR Code Block (no text below QR code)
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: isDark ? colors.surfaceVariant : Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: colors.border),
+                  ),
+                  child: QrImageView(
+                    data: slab.qrCode,
+                    version: QrVersions.auto,
+                    size: 74,
+                    backgroundColor: Colors.transparent,
+                    eyeStyle: QrEyeStyle(
+                      eyeShape: QrEyeShape.square,
+                      color: isDark ? colors.textPrimary : Colors.black,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      shortQr.toLowerCase(),
-                      style: GoogleFonts.robotoMono(
-                        fontSize: 9,
-                        color: colors.textSecondary,
-                        letterSpacing: 0.5,
-                      ),
+                    dataModuleStyle: QrDataModuleStyle(
+                      dataModuleShape: QrDataModuleShape.square,
+                      color: isDark ? colors.textPrimary : Colors.black,
                     ),
-                  ],
+                    padding: EdgeInsets.zero,
+                  ),
                 ),
               ],
             ),
@@ -960,8 +944,8 @@ class _DirectPrintLabelDialog extends StatefulWidget {
 }
 
 class _DirectPrintLabelDialogState extends State<_DirectPrintLabelDialog> {
-  String _selectedPrinter = 'Zebra ZD421 (Direct Thermal)';
-  String _selectedLabelSize = '100 × 50 mm (Warehouse Tag)';
+  String _selectedPrinter = 'Save as PDF (Digital Document)';
+  String _selectedLabelSize = '2cm × 10cm (100 × 20 mm Strip)';
   int _copies = 1;
   bool _isPrinting = false;
 
@@ -976,10 +960,9 @@ class _DirectPrintLabelDialogState extends State<_DirectPrintLabelDialog> {
   ];
 
   final List<String> _labelSizes = [
-    '100 × 50 mm (Warehouse Tag)',
+    '2cm × 10cm (100 × 20 mm Strip)',
+    'Standard A4 Sheet (2cm × 10cm stickers)',
     '100 × 150 mm (Pallet / Shipping Tag)',
-    '75 × 50 mm (Compact Slab Tag)',
-    'Standard A4 Sheet (4 labels/page)',
   ];
 
   void _triggerPrint() async {
@@ -1156,7 +1139,6 @@ class _DirectPrintLabelDialogState extends State<_DirectPrintLabelDialog> {
 
     final lenMm = (firstSlab.lengthMm > 0 ? firstSlab.lengthMm : firstSlab.lengthCm * 10).round();
     final widMm = (firstSlab.widthMm > 0 ? firstSlab.widthMm : firstSlab.widthCm * 10).round();
-    final shortQr = firstSlab.qrCode.length > 8 ? firstSlab.qrCode.substring(firstSlab.qrCode.length - 8) : firstSlab.qrCode;
 
     final mq = MediaQuery.of(context);
     final isMobile = context.isMobile;
@@ -1222,88 +1204,100 @@ class _DirectPrintLabelDialogState extends State<_DirectPrintLabelDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Live Printable Tag Preview Box
+                      // Live Printable Tag Preview Box (2cm x 10cm proportion, no text below QR)
                       Text(
-                        'Live Label Preview',
+                        'Live Label Preview (2cm × 10cm)',
                         style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: colors.textSecondary),
                       ),
                       const SizedBox(height: 8),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: isDark ? colors.surfaceVariant : Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: colors.border),
-                          boxShadow: isDark
-                              ? const []
-                              : const [
-                                  BoxShadow(color: Color(0x1A000000), blurRadius: 8, offset: Offset(0, 3)),
-                                ],
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    firstSlab.slabNo.isNotEmpty
-                                        ? firstSlab.slabNo.toUpperCase()
-                                        : 'SLAB  ${firstSlab.bundleNumber.split("-").last}-${firstSlab.slabNumber.toString().padLeft(2, "0")}',
-                                    style: GoogleFonts.robotoMono(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w800,
-                                      color: colors.textPrimary,
+                      AspectRatio(
+                        aspectRatio: 5.0, // 10cm : 2cm = 5 : 1 proportion
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isDark ? colors.surfaceVariant : Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: colors.border),
+                            boxShadow: isDark
+                                ? const []
+                                : const [
+                                    BoxShadow(color: Color(0x1A000000), blurRadius: 8, offset: Offset(0, 3)),
+                                  ],
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            '${firstSlab.slabNo.isNotEmpty ? firstSlab.slabNo.toUpperCase() : "SLAB ${firstSlab.bundleNumber.split("-").last}-${firstSlab.slabNumber.toString().padLeft(2, "0")}"} · ${(firstMat?.name ?? "Natural Stone").toUpperCase()}',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.robotoMono(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w800,
+                                              color: colors.textPrimary,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '$lenMm × $widMm mm = ${firstSlab.areaSqm.toStringAsFixed(2)} m²',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: colors.textPrimary,
+                                    Row(
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            '${firstMat?.finish ?? "Polish"} · ${firstMat?.stoneType ?? "Stone"}',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.inter(fontSize: 10.5, color: colors.textSecondary),
+                                          ),
+                                        ),
+                                        if (firstSlab.warehouseLocation.trim().isNotEmpty) ...[
+                                          const SizedBox(width: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                            decoration: BoxDecoration(
+                                              color: isDark ? colors.surface : Colors.grey.shade200,
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(color: colors.border),
+                                            ),
+                                            child: Text(
+                                              firstSlab.warehouseLocation,
+                                              style: GoogleFonts.inter(
+                                                fontSize: 9.5,
+                                                fontWeight: FontWeight.w600,
+                                                color: colors.textPrimary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${firstMat?.colorFamily ?? "Quartzite"} · ${firstMat?.name ?? "Natural Stone"} · ${firstMat?.finish ?? "Polished"}',
-                                    style: GoogleFonts.inter(fontSize: 11, color: colors.textSecondary),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: isDark ? colors.surface : Colors.grey.shade200,
-                                      borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(color: colors.border),
-                                    ),
-                                    child: Text(
-                                      firstSlab.warehouseLocation,
+                                    Text(
+                                      '$lenMm × $widMm mm = ${firstSlab.areaSqm.toStringAsFixed(2)} m²',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                       style: GoogleFonts.inter(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: colors.textPrimary,
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: colors.primary,
                                       ),
                                     ),
-                                  ),
-                                  if (widget.slabs.length > 1) ...[
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      '+ ${widget.slabs.length - 1} more slabs in queue',
-                                      style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: colors.primary),
-                                    ),
                                   ],
-                                ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 14),
-                            Column(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(4),
+                              const SizedBox(width: 10),
+                              AspectRatio(
+                                aspectRatio: 1,
+                                child: Container(
+                                  padding: const EdgeInsets.all(3),
                                   decoration: BoxDecoration(
                                     color: isDark ? colors.surface : Colors.white,
                                     borderRadius: BorderRadius.circular(6),
@@ -1312,7 +1306,6 @@ class _DirectPrintLabelDialogState extends State<_DirectPrintLabelDialog> {
                                   child: QrImageView(
                                     data: firstSlab.qrCode,
                                     version: QrVersions.auto,
-                                    size: 70,
                                     backgroundColor: Colors.transparent,
                                     eyeStyle: QrEyeStyle(
                                       eyeShape: QrEyeShape.square,
@@ -1325,16 +1318,18 @@ class _DirectPrintLabelDialogState extends State<_DirectPrintLabelDialog> {
                                     padding: EdgeInsets.zero,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  shortQr.toLowerCase(),
-                                  style: GoogleFonts.robotoMono(fontSize: 9, color: colors.textSecondary),
-                                ),
-                              ],
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
+                      if (widget.slabs.length > 1) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          '+ ${widget.slabs.length - 1} more slabs in queue',
+                          style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: colors.primary),
+                        ),
+                      ],
                       const SizedBox(height: 18),
 
                       // Destination Printer

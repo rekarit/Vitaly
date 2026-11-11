@@ -429,29 +429,22 @@ class AppState extends ChangeNotifier {
   // -- Warehouse Racks (matching AppSheet Screenshots 4 & 5) ------------------
   final List<Rack> racks = [
     const Rack(
-      rackCode: 'WAREHOUSE',
-      rackName: 'Warehouse',
-      warehouse: 'Warehouse',
-      active: 'Y',
-      locationType: 'Yard',
-    ),
-    const Rack(
-      rackCode: 'SHOWROOM',
+      rackCode: 'Showroom',
       rackName: 'Showroom',
-      warehouse: 'Warehouse',
+      warehouse: 'Showroom',
       active: 'Y',
       locationType: 'Field',
     ),
     const Rack(
-      rackCode: 'RACK-A1',
-      rackName: 'Rack A1',
-      warehouse: 'Warehouse',
+      rackCode: 'Site delivery',
+      rackName: 'Site delivery',
+      warehouse: 'Site delivery',
       active: 'Y',
-      locationType: 'Yard',
+      locationType: 'Field',
     ),
     const Rack(
-      rackCode: 'RACK-B1',
-      rackName: 'Rack B1',
+      rackCode: 'Warehouse',
+      rackName: 'Warehouse',
       warehouse: 'Warehouse',
       active: 'Y',
       locationType: 'Yard',

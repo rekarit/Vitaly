@@ -168,9 +168,6 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
           c.id.toLowerCase().contains(q);
     }).toList();
 
-    final validPhoneCount = allCustomers.where((c) => c.phone.trim().isNotEmpty).length;
-    final emailCount = allCustomers.where((c) => c.email.trim().isNotEmpty).length;
-
     return Scaffold(
       backgroundColor: colors.background,
       body: SafeArea(
@@ -233,39 +230,6 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                       ),
                     ),
                   ],
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // ── KPI Summary Stats ────────────────────────────────────────
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  _buildKpiCard(
-                    icon: Icons.people_alt_rounded,
-                    label: 'Total Customers',
-                    value: '${allCustomers.length}',
-                    color: colors.primary,
-                    colors: colors,
-                    isDark: isDark,
-                  ),
-                  _buildKpiCard(
-                    icon: Icons.phone_in_talk_rounded,
-                    label: 'With Phone',
-                    value: '$validPhoneCount',
-                    color: const Color(0xFF10B981),
-                    colors: colors,
-                    isDark: isDark,
-                  ),
-                  _buildKpiCard(
-                    icon: Icons.mark_email_read_rounded,
-                    label: 'With Email',
-                    value: '$emailCount',
-                    color: const Color(0xFF8B5CF6),
-                    colors: colors,
-                    isDark: isDark,
-                  ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -362,61 +326,6 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildKpiCard({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-    required AppColorsExtension colors,
-    required bool isDark,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: colors.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: isDark ? 0.2 : 0.12),
-              borderRadius: BorderRadius.circular(7),
-            ),
-            child: Icon(icon, color: color, size: 16),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                value,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: colors.textPrimary,
-                  height: 1.1,
-                ),
-              ),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: colors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

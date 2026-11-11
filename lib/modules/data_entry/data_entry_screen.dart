@@ -16,7 +16,6 @@ import '../../core/theme/responsive.dart';
 import 'material_form_dialog.dart';
 import 'slab_form_dialog.dart';
 import 'rack_detail_dialog.dart';
-import 'data_entry_filter_dialog.dart';
 import 'category_manager_dialog.dart';
 import 'material_manager_dialog.dart';
 import '../../core/services/auth_service.dart';
@@ -45,11 +44,47 @@ class DataEntryScreen extends StatefulWidget {
 class DataEntryScreenState extends State<DataEntryScreen> {
   CategoryModel? _selectedCategory;
   MaterialItem? _selectedMaterial;
-  String _searchQuery = '';
-  final _searchController = TextEditingController();
-  final DataEntryFilter _categoryFilter = DataEntryFilter();
-  bool _isGridView = true;
   final Set<String> _selectedSlabIds = {};
+
+  // Dimension filters for Material Detail slabs list (Filter by dimension)
+  double? _dimMinLengthCm;
+  double? _dimMaxLengthCm;
+  double? _dimMinWidthCm;
+  double? _dimMaxWidthCm;
+  double? _dimMinThicknessMm;
+  double? _dimMaxThicknessMm;
+  double? _dimMinAreaSqm;
+  double? _dimMaxAreaSqm;
+
+  bool get _hasDimensionFilter =>
+      _dimMinLengthCm != null ||
+      _dimMaxLengthCm != null ||
+      _dimMinWidthCm != null ||
+      _dimMaxWidthCm != null ||
+      _dimMinThicknessMm != null ||
+      _dimMaxThicknessMm != null ||
+      _dimMinAreaSqm != null ||
+      _dimMaxAreaSqm != null;
+
+  int get _activeDimensionFilterCount {
+    int c = 0;
+    if (_dimMinLengthCm != null || _dimMaxLengthCm != null) c++;
+    if (_dimMinWidthCm != null || _dimMaxWidthCm != null) c++;
+    if (_dimMinThicknessMm != null || _dimMaxThicknessMm != null) c++;
+    if (_dimMinAreaSqm != null || _dimMaxAreaSqm != null) c++;
+    return c;
+  }
+
+  void _clearDimensionFilters() {
+    _dimMinLengthCm = null;
+    _dimMaxLengthCm = null;
+    _dimMinWidthCm = null;
+    _dimMaxWidthCm = null;
+    _dimMinThicknessMm = null;
+    _dimMaxThicknessMm = null;
+    _dimMinAreaSqm = null;
+    _dimMaxAreaSqm = null;
+  }
 
   @override
   void initState() {
@@ -144,14 +179,9 @@ class DataEntryScreenState extends State<DataEntryScreen> {
         _selectedCategory = cat;
         _selectedMaterial = foundMat;
         _selectedSlabIds.clear();
+        _clearDimensionFilters();
       });
     }
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -528,15 +558,8 @@ class DataEntryScreenState extends State<DataEntryScreen> {
       return _buildCategoryDetailView(appState, colors);
     }
 
-    // Otherwise render the Categories Grid
-    final filteredCategories = appState.categoryModels.where((cat) {
-      if (!_categoryFilter.matchesCategoryWithState(cat, appState)) return false;
-      if (_searchQuery.isEmpty) return true;
-      final q = _searchQuery.toLowerCase();
-      return cat.categoryName.toLowerCase().contains(q) ||
-          cat.categoryCode.toString().contains(q) ||
-          cat.categoryHeader.toLowerCase().contains(q);
-    }).toList();
+    // Otherwise render the clean Categories Grid (matching Images 4 & 5)
+    final filteredCategories = appState.categoryModels;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -546,223 +569,79 @@ class DataEntryScreenState extends State<DataEntryScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.fromLTRB(context.screenPadding, 24, context.screenPadding, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                alignment: WrapAlignment.spaceBetween,
                 children: [
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 16,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    alignment: WrapAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Data Entry',
-                            style: GoogleFonts.inter(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: colors.textPrimary,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Inventory hierarchy',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'Data Entry',
+                        style: GoogleFonts.inter(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: colors.textPrimary,
+                          letterSpacing: -0.3,
+                        ),
                       ),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          if (AuthService.instance.currentPermissions.canFilterCategories)
-                            _buildCategoryFilterButton(colors, isDark, appState),
-                          if (AuthService.instance.currentPermissions.canManageCategories)
-                            OutlinedButton.icon(
-                              icon: const Icon(Icons.tune_rounded, size: 17),
-                              label: const Text('Category Manager', style: TextStyle(fontWeight: FontWeight.w600)),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: colors.textPrimary,
-                                side: BorderSide(color: colors.border),
-                                padding: EdgeInsets.symmetric(horizontal: context.isMobile ? 12 : 16, vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                              onPressed: () => _requirePermission(
-                                () => CategoryManagerDialog.show(
-                                  context,
-                                  onAddNewCategory: () => _requirePermission(_openCategoriesFormDialog, actionTitle: 'New Category'),
-                                ),
-                                actionTitle: 'Category Manager',
-                              ),
-                            ),
-                          if (AuthService.instance.currentPermissions.canAddCategory)
-                            ElevatedButton.icon(
-                              icon: const Icon(Icons.add_rounded, size: 18),
-                              label: const Text('New Category', style: TextStyle(fontWeight: FontWeight.bold)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: colors.primary,
-                                foregroundColor: primaryBtnTextColor,
-                                padding: EdgeInsets.symmetric(horizontal: context.isMobile ? 14 : 20, vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                elevation: 0,
-                              ),
-                              onPressed: () => _requirePermission(_openCategoriesFormDialog, actionTitle: 'New Category'),
-                            ),
-                        ],
+                      const SizedBox(height: 2),
+                      Text(
+                        'Inventory hierarchy',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: colors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
-                  if (_categoryFilter.isActive) ...[
-                    const SizedBox(height: 14),
-                    _buildActiveCategoryFilterChips(colors, isDark),
-                  ],
-                  const SizedBox(height: 20),
-
-                  // Search Box and Count Badge
-                  if (context.isMobile) ...[
-                    Container(
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: colors.surfaceVariant,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: colors.border),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      child: Row(
-                        children: [
-                          Icon(Icons.search, size: 18, color: colors.textDisabled),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextField(
-                              controller: _searchController,
-                              style: GoogleFonts.inter(fontSize: 13, color: colors.textPrimary),
-                              onChanged: (val) => setState(() => _searchQuery = val.trim()),
-                              decoration: InputDecoration(
-                                hintText: 'Search categories...',
-                                hintStyle: GoogleFonts.inter(fontSize: 13, color: colors.textDisabled),
-                                border: InputBorder.none,
-                                isDense: true,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (AuthService.instance.currentPermissions.canManageCategories)
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.tune_rounded, size: 17),
+                          label: const Text('Category Manager', style: TextStyle(fontWeight: FontWeight.w600)),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: colors.textPrimary,
+                            side: BorderSide(color: colors.border),
+                            padding: EdgeInsets.symmetric(horizontal: context.isMobile ? 12 : 16, vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
-                          if (_searchQuery.isNotEmpty)
-                            GestureDetector(
-                              onTap: () {
-                                _searchController.clear();
-                                setState(() => _searchQuery = '');
-                              },
-                              child: Icon(Icons.clear, size: 16, color: colors.textSecondary),
+                          onPressed: () => _requirePermission(
+                            () => CategoryManagerDialog.show(
+                              context,
+                              onAddNewCategory: () => _requirePermission(_openCategoriesFormDialog, actionTitle: 'New Category'),
                             ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          height: 36,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: colors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: colors.border),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '${filteredCategories.length} Categories',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: colors.textSecondary,
-                            ),
+                            actionTitle: 'Category Manager',
                           ),
                         ),
-                        _buildViewModeToggle(colors, isDark),
-                      ],
-                    ),
-                  ] else ...[
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: colors.surfaceVariant,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: colors.border),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
-                            child: Row(
-                              children: [
-                                Icon(Icons.search, size: 18, color: colors.textDisabled),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: TextField(
-                                    controller: _searchController,
-                                    style: GoogleFonts.inter(fontSize: 13, color: colors.textPrimary),
-                                    onChanged: (val) => setState(() => _searchQuery = val.trim()),
-                                    decoration: InputDecoration(
-                                      hintText: 'Search categories by name or code...',
-                                      hintStyle: GoogleFonts.inter(fontSize: 13, color: colors.textDisabled),
-                                      border: InputBorder.none,
-                                      isDense: true,
-                                      contentPadding: EdgeInsets.zero,
-                                    ),
-                                  ),
-                                ),
-                                if (_searchQuery.isNotEmpty)
-                                  GestureDetector(
-                                    onTap: () {
-                                      _searchController.clear();
-                                      setState(() => _searchQuery = '');
-                                    },
-                                    child: Icon(Icons.clear, size: 16, color: colors.textSecondary),
-                                  ),
-                              ],
-                            ),
+                      if (AuthService.instance.currentPermissions.canAddCategory)
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          label: const Text('New Category', style: TextStyle(fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colors.primary,
+                            foregroundColor: primaryBtnTextColor,
+                            padding: EdgeInsets.symmetric(horizontal: context.isMobile ? 14 : 20, vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            elevation: 0,
                           ),
+                          onPressed: () => _requirePermission(_openCategoriesFormDialog, actionTitle: 'New Category'),
                         ),
-                        const SizedBox(width: 12),
-                        Container(
-                          height: 44,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: colors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: colors.border),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '${filteredCategories.length} Categories',
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        // View Mode Toggle (Grid vs List)
-                        _buildViewModeToggle(colors, isDark),
-                      ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ],
               ),
             ),
           ),
 
-          // Categories Grid / List View
+          // Categories Grid View
           if (filteredCategories.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
@@ -785,7 +664,7 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                 ),
               ),
             )
-          else if (_isGridView)
+          else
             SliverPadding(
               padding: EdgeInsets.fromLTRB(context.screenPadding, 8, context.screenPadding, 36),
               sliver: SliverGrid(
@@ -811,36 +690,6 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                           _selectedCategory = cat;
                         });
                       },
-                    );
-                  },
-                  childCount: filteredCategories.length,
-                ),
-              ),
-            )
-          else
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(context.screenPadding, 8, context.screenPadding, 36),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final cat = filteredCategories[index];
-                    final totalSlabs = appState.totalSlabsForCategory(cat.categoryName);
-                    final totalArea = appState.totalAreaSqmForCategory(cat.categoryName);
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _buildCategoryListItem(
-                        category: cat,
-                        totalSlabs: totalSlabs,
-                        totalAreaSqm: totalArea,
-                        colors: colors,
-                        isDark: isDark,
-                        onTap: () {
-                          setState(() {
-                            _selectedCategory = cat;
-                          });
-                        },
-                      ),
                     );
                   },
                   childCount: filteredCategories.length,
@@ -1301,7 +1150,23 @@ class DataEntryScreenState extends State<DataEntryScreen> {
     setState(() {
       _selectedMaterial = mats[validIndex];
       _selectedSlabIds.clear();
+      _clearDimensionFilters();
     });
+  }
+
+  bool _matchesDimensionFilter(Slab slab) {
+    final lenCm = slab.lengthCm > 0 ? slab.lengthCm : (slab.lengthMm / 10.0);
+    final widCm = slab.widthCm > 0 ? slab.widthCm : (slab.widthMm / 10.0);
+    final thickMm = slab.thicknessMm > 0 ? slab.thicknessMm : (slab.thicknessCm * 10.0);
+    if (_dimMinLengthCm != null && lenCm < _dimMinLengthCm!) return false;
+    if (_dimMaxLengthCm != null && lenCm > _dimMaxLengthCm!) return false;
+    if (_dimMinWidthCm != null && widCm < _dimMinWidthCm!) return false;
+    if (_dimMaxWidthCm != null && widCm > _dimMaxWidthCm!) return false;
+    if (_dimMinThicknessMm != null && thickMm < _dimMinThicknessMm!) return false;
+    if (_dimMaxThicknessMm != null && thickMm > _dimMaxThicknessMm!) return false;
+    if (_dimMinAreaSqm != null && slab.areaSqm < _dimMinAreaSqm!) return false;
+    if (_dimMaxAreaSqm != null && slab.areaSqm > _dimMaxAreaSqm!) return false;
+    return true;
   }
 
   Future<void> _confirmBulkDeleteSlabs(AppState appState) async {
@@ -1781,6 +1646,7 @@ class DataEntryScreenState extends State<DataEntryScreen> {
         appState.categoryModelByName(mat.categoryId) ??
         CategoryModel(categoryCode: mat.categoryCode, categoryName: mat.categoryId);
     final slabs = appState.slabsForMaterial(mat.materialCode);
+    final filteredSlabs = slabs.where(_matchesDimensionFilter).toList();
     final totalArea = slabs.isNotEmpty
         ? slabs.fold(0.0, (sum, s) => sum + s.areaSqm)
         : mat.totalAreaSqm;
@@ -1789,6 +1655,7 @@ class DataEntryScreenState extends State<DataEntryScreen> {
     final soldOrUnavailCount = slabs.where((s) => s.status == SlabStatus.unavailable || s.status == SlabStatus.sold || s.status == SlabStatus.reserved).length;
     final damagedCount = slabs.where((s) => s.status == SlabStatus.damaged).length;
     final isMobile = context.isMobile;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -1806,6 +1673,8 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                     onTap: () {
                       setState(() {
                         _selectedMaterial = null;
+                        _selectedSlabIds.clear();
+                        _clearDimensionFilters();
                       });
                     },
                     borderRadius: BorderRadius.circular(8),
@@ -1860,6 +1729,8 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                             onTap: () {
                               setState(() {
                                 _selectedMaterial = null;
+                                _selectedSlabIds.clear();
+                                _clearDimensionFilters();
                               });
                             },
                             child: Icon(Icons.close, size: 16, color: colors.primary),
@@ -1888,8 +1759,12 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                         onPressed: () => _openSlabFormDialog(mat),
                       ),
                     ),
+                  if (AuthService.instance.currentPermissions.canAddSlab) const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildDimensionFilterButton(colors, isDark),
+                  ),
                   if (AuthService.instance.currentPermissions.canManageCategories || AuthService.instance.currentPermissions.canAddMaterial || AuthService.instance.currentPermissions.canEditMaterial) ...[
-                    if (AuthService.instance.currentPermissions.canAddSlab) const SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     OutlinedButton.icon(
                       icon: const Icon(Icons.tune_rounded, size: 16),
                       label: const Text('Manager', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
@@ -1957,6 +1832,8 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                         onTap: () {
                           setState(() {
                             _selectedMaterial = null;
+                            _selectedSlabIds.clear();
+                            _clearDimensionFilters();
                           });
                         },
                         borderRadius: BorderRadius.circular(6),
@@ -1996,6 +1873,8 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                               onTap: () {
                                 setState(() {
                                   _selectedMaterial = null;
+                                  _selectedSlabIds.clear();
+                                  _clearDimensionFilters();
                                 });
                               },
                               child: Icon(Icons.close, size: 16, color: colors.textSecondary),
@@ -2072,6 +1951,8 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                           onPressed: () => _openSlabFormDialog(mat),
                         ),
                       ],
+                      const SizedBox(width: 8),
+                      _buildDimensionFilterButton(colors, isDark),
                       const SizedBox(width: 12),
                       Container(
                         height: 36,
@@ -2304,7 +2185,12 @@ class DataEntryScreenState extends State<DataEntryScreen> {
               ),
             ),
 
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
+
+            if (_hasDimensionFilter) ...[
+              _buildActiveDimensionFilterChips(colors, isDark),
+              const SizedBox(height: 16),
+            ],
 
             // ── Related StoneInventorys Subsection (Matching Photo 2) ────
             Wrap(
@@ -2333,34 +2219,36 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                         border: Border.all(color: colors.border),
                       ),
                       child: Text(
-                        '${slabs.length}',
+                        _hasDimensionFilter
+                            ? '${filteredSlabs.length} / ${slabs.length}'
+                            : '${slabs.length}',
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: colors.textSecondary,
+                          color: _hasDimensionFilter ? colors.primary : colors.textSecondary,
                         ),
                       ),
                     ),
                   ],
                 ),
-                if (slabs.isNotEmpty)
+                if (filteredSlabs.isNotEmpty)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // Select All Checkbox
                       Builder(
                         builder: (_) {
-                          final allSelected = slabs.every((s) => _selectedSlabIds.contains(s.id));
-                          final someSelected = slabs.any((s) => _selectedSlabIds.contains(s.id));
+                          final allSelected = filteredSlabs.every((s) => _selectedSlabIds.contains(s.id));
+                          final someSelected = filteredSlabs.any((s) => _selectedSlabIds.contains(s.id));
                           return InkWell(
                             onTap: () {
                               setState(() {
                                 if (allSelected) {
-                                  for (final s in slabs) {
+                                  for (final s in filteredSlabs) {
                                     _selectedSlabIds.remove(s.id);
                                   }
                                 } else {
-                                  for (final s in slabs) {
+                                  for (final s in filteredSlabs) {
                                     _selectedSlabIds.add(s.id);
                                   }
                                 }
@@ -2384,11 +2272,11 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                                       onChanged: (_) {
                                         setState(() {
                                           if (allSelected) {
-                                            for (final s in slabs) {
+                                            for (final s in filteredSlabs) {
                                               _selectedSlabIds.remove(s.id);
                                             }
                                           } else {
-                                            for (final s in slabs) {
+                                            for (final s in filteredSlabs) {
                                               _selectedSlabIds.add(s.id);
                                             }
                                           }
@@ -2473,7 +2361,7 @@ class DataEntryScreenState extends State<DataEntryScreen> {
             const SizedBox(height: 16),
 
             // Slabs List
-            if (slabs.isEmpty)
+            if (filteredSlabs.isEmpty)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
@@ -2484,17 +2372,30 @@ class DataEntryScreenState extends State<DataEntryScreen> {
                 ),
                 child: Column(
                   children: [
-                    Icon(Icons.inventory_2_outlined, size: 44, color: colors.textDisabled),
+                    Icon(
+                      _hasDimensionFilter ? Icons.straighten_rounded : Icons.inventory_2_outlined,
+                      size: 44,
+                      color: colors.textDisabled,
+                    ),
                     const SizedBox(height: 12),
                     Text(
-                      'No slabs recorded for ${mat.name.toUpperCase()} yet',
+                      _hasDimensionFilter
+                          ? 'No slabs match these dimensions'
+                          : 'No slabs recorded for ${mat.name.toUpperCase()} yet',
                       style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: colors.textPrimary),
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      'Click "Add Slab" above to record the first slab.',
-                      style: GoogleFonts.inter(fontSize: 13, color: colors.textSecondary),
-                    ),
+                    if (_hasDimensionFilter)
+                      TextButton.icon(
+                        onPressed: () => setState(_clearDimensionFilters),
+                        icon: const Icon(Icons.filter_alt_off_rounded, size: 16),
+                        label: const Text('Clear Dimension Filter'),
+                      )
+                    else
+                      Text(
+                        'Click "Add Slab" above to record the first slab.',
+                        style: GoogleFonts.inter(fontSize: 13, color: colors.textSecondary),
+                      ),
                   ],
                 ),
               )
@@ -2502,10 +2403,10 @@ class DataEntryScreenState extends State<DataEntryScreen> {
               ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: slabs.length,
+                itemCount: filteredSlabs.length,
                 separatorBuilder: (_, __) => Divider(color: colors.border, height: 1),
                 itemBuilder: (ctx, i) {
-                  final Slab slab = slabs[i];
+                  final Slab slab = filteredSlabs[i];
                   final isSelected = _selectedSlabIds.contains(slab.id);
                   final double lCm = slab.lengthCm > 0 ? slab.lengthCm : (slab.lengthMm / 10.0);
                   final double wCm = slab.widthCm > 0 ? slab.widthCm : (slab.widthMm / 10.0);
@@ -3222,221 +3123,20 @@ class DataEntryScreenState extends State<DataEntryScreen> {
     );
   }
 
-  Widget _buildCategoryListItem({
-    required CategoryModel category,
-    required int totalSlabs,
-    required double totalAreaSqm,
-    required AppColorsExtension colors,
-    required bool isDark,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildDimensionFilterButton(AppColorsExtension colors, bool isDark) {
+    final bool active = _hasDimensionFilter;
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: colors.border),
-          ),
-          child: Row(
-            children: [
-              // Code Badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: isDark ? colors.surfaceVariant : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: colors.border),
-                ),
-                child: Text(
-                  'Code: ${category.categoryCode}',
-                  style: GoogleFonts.robotoMono(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: colors.textSecondary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-
-              // Folder Icon
-              Icon(Icons.folder_open_rounded, size: 22, color: colors.primary),
-              const SizedBox(width: 14),
-
-              // Category Name & Header
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      category.categoryName,
-                      style: GoogleFonts.inter(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${category.categoryName} - ${category.categoryCode}',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Stock summary badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isDark ? colors.surfaceVariant : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: colors.border),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.grid_on_rounded, size: 14, color: colors.textSecondary),
-                    const SizedBox(width: 6),
-                    Text(
-                      totalSlabs > 0
-                          ? '${totalAreaSqm.toStringAsFixed(0)} sqm - $totalSlabs slabs'
-                          : '0 sqm - 0 slabs',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 14),
-
-              // Arrow
-              Icon(Icons.arrow_forward_ios_rounded, size: 13, color: colors.textDisabled),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildViewModeToggle(AppColorsExtension colors, bool isDark) {
-    return Container(
-      height: 44,
-      decoration: BoxDecoration(
-        color: colors.surfaceVariant,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colors.border),
-      ),
-      padding: const EdgeInsets.all(4),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Grid
-          InkWell(
-            onTap: () => setState(() => _isGridView = true),
-            borderRadius: BorderRadius.circular(6),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: _isGridView ? colors.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.grid_view_rounded,
-                    size: 16,
-                    color: _isGridView
-                        ? (isDark ? const Color(0xFF111418) : Colors.white)
-                        : colors.textSecondary,
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    'Grid',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: _isGridView ? FontWeight.bold : FontWeight.w500,
-                      color: _isGridView
-                          ? (isDark ? const Color(0xFF111418) : Colors.white)
-                          : colors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 2),
-          // List
-          InkWell(
-            onTap: () => setState(() => _isGridView = false),
-            borderRadius: BorderRadius.circular(6),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: !_isGridView ? colors.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.view_list_rounded,
-                    size: 16,
-                    color: !_isGridView
-                        ? (isDark ? const Color(0xFF111418) : Colors.white)
-                        : colors.textSecondary,
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    'List',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: !_isGridView ? FontWeight.bold : FontWeight.w500,
-                      color: !_isGridView
-                          ? (isDark ? const Color(0xFF111418) : Colors.white)
-                          : colors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Category Filter Dialog & Chips
-  // ---------------------------------------------------------------------------
-
-  Widget _buildCategoryFilterButton(AppColorsExtension colors, bool isDark, AppState appState) {
-    final bool active = _categoryFilter.isActive;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _openCategoryFilterDialog(appState),
+        onTap: _openFilterByDimensionDialog,
         borderRadius: BorderRadius.circular(8),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          height: 44,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: active
-                ? colors.primary.withValues(alpha: 0.12)
+                ? colors.primary.withValues(alpha: 0.14)
                 : colors.surfaceVariant,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
@@ -3448,31 +3148,31 @@ class DataEntryScreenState extends State<DataEntryScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.tune_rounded,
-                size: 18,
+                Icons.straighten_rounded,
+                size: 16,
                 color: active ? colors.primary : colors.textSecondary,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Text(
-                'Filter',
+                'Filter by dimension',
                 style: GoogleFonts.inter(
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: active ? FontWeight.bold : FontWeight.w600,
-                  color: active ? colors.primary : colors.textSecondary,
+                  color: active ? colors.primary : colors.textPrimary,
                 ),
               ),
               if (active) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                   decoration: BoxDecoration(
                     color: colors.primary,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    '${_categoryFilter.activeFilterCount}',
+                    '$_activeDimensionFilterCount',
                     style: GoogleFonts.inter(
-                      fontSize: 11,
+                      fontSize: 10,
                       fontWeight: FontWeight.bold,
                       color: isDark ? const Color(0xFF111418) : Colors.white,
                     ),
@@ -3486,7 +3186,7 @@ class DataEntryScreenState extends State<DataEntryScreen> {
     );
   }
 
-  Widget _buildActiveCategoryFilterChips(AppColorsExtension colors, bool isDark) {
+  Widget _buildActiveDimensionFilterChips(AppColorsExtension colors, bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -3502,10 +3202,10 @@ class DataEntryScreenState extends State<DataEntryScreen> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.filter_alt_outlined, size: 14, color: colors.primary),
+              Icon(Icons.straighten_rounded, size: 14, color: colors.primary),
               const SizedBox(width: 4),
               Text(
-                'Active Filters:',
+                'Dimension Filters:',
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -3514,52 +3214,56 @@ class DataEntryScreenState extends State<DataEntryScreen> {
               ),
             ],
           ),
-          if (_categoryFilter.stockStatus != null && _categoryFilter.stockStatus != 'all')
+          if (_dimMinLengthCm != null)
             _buildFilterTag(
-              label: _categoryFilter.stockStatus == 'inStock'
-                  ? 'In Stock (>0)'
-                  : 'Empty (0 Slabs)',
-              onDeleted: () => setState(() => _categoryFilter.stockStatus = 'all'),
+              label: 'L ≥ ${_dimMinLengthCm!.toStringAsFixed(0)} cm',
+              onDeleted: () => setState(() => _dimMinLengthCm = null),
               colors: colors,
             ),
-          if (_categoryFilter.stoneType != null)
+          if (_dimMaxLengthCm != null)
             _buildFilterTag(
-              label: 'Type: ${_categoryFilter.stoneType}',
-              onDeleted: () => setState(() => _categoryFilter.stoneType = null),
+              label: 'L ≤ ${_dimMaxLengthCm!.toStringAsFixed(0)} cm',
+              onDeleted: () => setState(() => _dimMaxLengthCm = null),
               colors: colors,
             ),
-          if (_categoryFilter.finish != null)
+          if (_dimMinWidthCm != null)
             _buildFilterTag(
-              label: 'Finish: ${_categoryFilter.finish}',
-              onDeleted: () => setState(() => _categoryFilter.finish = null),
+              label: 'W ≥ ${_dimMinWidthCm!.toStringAsFixed(0)} cm',
+              onDeleted: () => setState(() => _dimMinWidthCm = null),
               colors: colors,
             ),
-          if (_categoryFilter.rackLocation != null)
+          if (_dimMaxWidthCm != null)
             _buildFilterTag(
-              label: 'Rack: ${_categoryFilter.rackLocation}',
-              onDeleted: () => setState(() => _categoryFilter.rackLocation = null),
+              label: 'W ≤ ${_dimMaxWidthCm!.toStringAsFixed(0)} cm',
+              onDeleted: () => setState(() => _dimMaxWidthCm = null),
               colors: colors,
             ),
-          if (_categoryFilter.origin != null)
+          if (_dimMinThicknessMm != null)
             _buildFilterTag(
-              label: 'Origin: ${_categoryFilter.origin}',
-              onDeleted: () => setState(() => _categoryFilter.origin = null),
+              label: 'T ≥ ${_dimMinThicknessMm!.toStringAsFixed(0)} mm',
+              onDeleted: () => setState(() => _dimMinThicknessMm = null),
               colors: colors,
             ),
-          if (_categoryFilter.minSlabs != null)
+          if (_dimMaxThicknessMm != null)
             _buildFilterTag(
-              label: '≥ ${_categoryFilter.minSlabs} Slabs',
-              onDeleted: () => setState(() => _categoryFilter.minSlabs = null),
+              label: 'T ≤ ${_dimMaxThicknessMm!.toStringAsFixed(0)} mm',
+              onDeleted: () => setState(() => _dimMaxThicknessMm = null),
               colors: colors,
             ),
-          if (_categoryFilter.minAreaSqm != null)
+          if (_dimMinAreaSqm != null)
             _buildFilterTag(
-              label: '≥ ${_categoryFilter.minAreaSqm!.toStringAsFixed(1)} m²',
-              onDeleted: () => setState(() => _categoryFilter.minAreaSqm = null),
+              label: 'Area ≥ ${_dimMinAreaSqm!.toStringAsFixed(2)} m²',
+              onDeleted: () => setState(() => _dimMinAreaSqm = null),
+              colors: colors,
+            ),
+          if (_dimMaxAreaSqm != null)
+            _buildFilterTag(
+              label: 'Area ≤ ${_dimMaxAreaSqm!.toStringAsFixed(2)} m²',
+              onDeleted: () => setState(() => _dimMaxAreaSqm = null),
               colors: colors,
             ),
           InkWell(
-            onTap: () => setState(() => _categoryFilter.reset()),
+            onTap: () => setState(_clearDimensionFilters),
             borderRadius: BorderRadius.circular(4),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -3612,61 +3316,200 @@ class DataEntryScreenState extends State<DataEntryScreen> {
     );
   }
 
-  Future<void> _openCategoryFilterDialog(AppState appState) async {
-    final categoryExtractedStoneTypes = appState.categoryModels
-        .map((c) => c.categoryName.contains('/') ? c.categoryName.split('/').first.trim() : c.categoryName.trim())
-        .where((s) => s.isNotEmpty && s.length <= 25);
-
-    final availableStoneTypes = {
-      ...appState.materials.map((m) => m.stoneType).where((s) => s.isNotEmpty),
-      ...categoryExtractedStoneTypes,
-    }.toList()
-      ..sort();
-
-    final availableFinishes = appState.materials
-        .map((m) => m.finish)
-        .where((s) => s.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort();
-
-    final availableRacks = appState.racks
-        .map((r) => r.rackCode)
-        .where((s) => s.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort();
-
-    final availableOrigins = appState.materials
-        .map((m) => m.origin)
-        .where((s) => s.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort();
-
-    final res = await DataEntryFilterDialog.show(
-      context,
-      currentFilter: _categoryFilter,
-      allCategories: appState.categoryModels,
-      stoneTypes: availableStoneTypes,
-      finishes: availableFinishes,
-      racks: availableRacks,
-      origins: availableOrigins,
-      appState: appState,
+  Future<void> _openFilterByDimensionDialog() async {
+    final minLenCtrl = TextEditingController(
+      text: _dimMinLengthCm != null ? _dimMinLengthCm!.toStringAsFixed(0) : '',
+    );
+    final maxLenCtrl = TextEditingController(
+      text: _dimMaxLengthCm != null ? _dimMaxLengthCm!.toStringAsFixed(0) : '',
+    );
+    final minWidCtrl = TextEditingController(
+      text: _dimMinWidthCm != null ? _dimMinWidthCm!.toStringAsFixed(0) : '',
+    );
+    final maxWidCtrl = TextEditingController(
+      text: _dimMaxWidthCm != null ? _dimMaxWidthCm!.toStringAsFixed(0) : '',
+    );
+    final minThkCtrl = TextEditingController(
+      text: _dimMinThicknessMm != null ? _dimMinThicknessMm!.toStringAsFixed(0) : '',
+    );
+    final maxThkCtrl = TextEditingController(
+      text: _dimMaxThicknessMm != null ? _dimMaxThicknessMm!.toStringAsFixed(0) : '',
+    );
+    final minAreaCtrl = TextEditingController(
+      text: _dimMinAreaSqm != null ? _dimMinAreaSqm!.toStringAsFixed(2) : '',
+    );
+    final maxAreaCtrl = TextEditingController(
+      text: _dimMaxAreaSqm != null ? _dimMaxAreaSqm!.toStringAsFixed(2) : '',
     );
 
-    if (res != null) {
+    final colors = context.colors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    Widget buildNumField(TextEditingController ctrl, String hint) {
+      return TextField(
+        controller: ctrl,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        style: GoogleFonts.inter(fontSize: 13, color: colors.textPrimary),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: GoogleFonts.inter(fontSize: 12, color: colors.textDisabled),
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          filled: true,
+          fillColor: colors.surfaceVariant,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: colors.border),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: colors.border),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: colors.primary, width: 1.5),
+          ),
+        ),
+      );
+    }
+
+    Widget buildRangeRow(
+      String title,
+      TextEditingController minCtrl,
+      TextEditingController maxCtrl,
+    ) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: colors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Expanded(child: buildNumField(minCtrl, 'Min')),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    '–',
+                    style: GoogleFonts.inter(color: colors.textDisabled),
+                  ),
+                ),
+                Expanded(child: buildNumField(maxCtrl, 'Max')),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: colors.border),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.straighten_rounded, color: colors.primary, size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Filter by dimension',
+                style: GoogleFonts.inter(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: colors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 360,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                buildRangeRow('Length (cm)', minLenCtrl, maxLenCtrl),
+                buildRangeRow('Width (cm)', minWidCtrl, maxWidCtrl),
+                buildRangeRow('Thickness (mm)', minThkCtrl, maxThkCtrl),
+                buildRangeRow('Area (m²)', minAreaCtrl, maxAreaCtrl),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              minLenCtrl.clear();
+              maxLenCtrl.clear();
+              minWidCtrl.clear();
+              maxWidCtrl.clear();
+              minThkCtrl.clear();
+              maxThkCtrl.clear();
+              minAreaCtrl.clear();
+              maxAreaCtrl.clear();
+              Navigator.of(ctx).pop(true);
+            },
+            child: Text(
+              'Reset',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                color: colors.error,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(color: colors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colors.primary,
+              foregroundColor: isDark ? const Color(0xFF111418) : Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              elevation: 0,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Apply', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && mounted) {
       setState(() {
-        _categoryFilter.stockStatus = res.stockStatus;
-        _categoryFilter.stoneType = res.stoneType;
-        _categoryFilter.finish = res.finish;
-        _categoryFilter.rackLocation = res.rackLocation;
-        _categoryFilter.origin = res.origin;
-        _categoryFilter.minAreaSqm = res.minAreaSqm;
-        _categoryFilter.maxAreaSqm = res.maxAreaSqm;
-        _categoryFilter.minSlabs = res.minSlabs;
-        _categoryFilter.maxSlabs = res.maxSlabs;
+        _dimMinLengthCm = double.tryParse(minLenCtrl.text.trim());
+        _dimMaxLengthCm = double.tryParse(maxLenCtrl.text.trim());
+        _dimMinWidthCm = double.tryParse(minWidCtrl.text.trim());
+        _dimMaxWidthCm = double.tryParse(maxWidCtrl.text.trim());
+        _dimMinThicknessMm = double.tryParse(minThkCtrl.text.trim());
+        _dimMaxThicknessMm = double.tryParse(maxThkCtrl.text.trim());
+        _dimMinAreaSqm = double.tryParse(minAreaCtrl.text.trim());
+        _dimMaxAreaSqm = double.tryParse(maxAreaCtrl.text.trim());
       });
     }
+
+    minLenCtrl.dispose();
+    maxLenCtrl.dispose();
+    minWidCtrl.dispose();
+    maxWidCtrl.dispose();
+    minThkCtrl.dispose();
+    maxThkCtrl.dispose();
+    minAreaCtrl.dispose();
+    maxAreaCtrl.dispose();
   }
 }

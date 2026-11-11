@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/models/category_model.dart';
 import '../../core/models/material_item.dart';
 import '../../core/models/slab.dart';
 import '../../core/state/app_state.dart';
@@ -46,6 +47,8 @@ class AvailableStoneScreenState extends State<AvailableStoneScreen> {
   final AdvancedStoneFilter _advancedFilter = AdvancedStoneFilter();
   String _searchQuery = '';
   String _selectedCategory = 'All';
+  CategoryModel? _selectedCategoryModel;
+  MaterialItem? _selectedMaterial;
   String? _expandedMaterialCode;
   bool _isGridView = false;
   StoneStockTab _currentTab = StoneStockTab.available; // Available, Unavailable, or Damaged
@@ -55,6 +58,8 @@ class AvailableStoneScreenState extends State<AvailableStoneScreen> {
     if (mounted) {
       setState(() {
         _selectedCategory = 'All';
+        _selectedCategoryModel = null;
+        _selectedMaterial = null;
         _searchCtrl.clear();
         _searchQuery = '';
         _expandedMaterialCode = null;
@@ -157,74 +162,79 @@ class AvailableStoneScreenState extends State<AvailableStoneScreen> {
             totalDamagedCount: totalDamagedCount,
           ),
 
-          // ── Search & Filter Bar ──────────────────────────────────────
+          // ── Search Bar (and Grid/List toggle when searching/filtering) ──
           _buildSearchAndFilters(colors, isDark, categoryList),
 
-          // ── Materials & Slabs Content ────────────────────────────────
+          // ── Hierarchical / Search Content ─────────────────────────────
           Expanded(
-            child: filteredMaterials.isEmpty
-                ? _buildEmptyState(colors)
-                : (_isGridView
-                    ? GridView.builder(
-                        padding: EdgeInsets.fromLTRB(
-                          context.screenPadding, 12, context.screenPadding, 40,
-                        ),
-                        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: context.responsiveValue(
-                            mobile: MediaQuery.sizeOf(context).width,
-                            tablet: 320,
-                            desktop: 360,
-                          ),
-                          mainAxisExtent: context.isMobile ? 230 : 260,
-                          crossAxisSpacing: context.isMobile ? 10 : 16,
-                          mainAxisSpacing: context.isMobile ? 10 : 16,
-                        ),
-                        itemCount: filteredMaterials.length,
-                        itemBuilder: (ctx, idx) {
-                          final mat = filteredMaterials[idx];
-                          final allSlabs = slabsByMatCode[mat.materialCode] ?? [];
-                          final matSlabs = _getDisplaySlabs(mat, allSlabs, _searchQuery);
-                          return _buildMaterialGridCard(
-                            mat: mat,
-                            slabs: matSlabs,
-                            colors: colors,
-                            isDark: isDark,
-                            onTap: () {
-                              _showMaterialSlabsSheet(context, mat, matSlabs, colors, isDark);
+            child: _searchQuery.isNotEmpty || _advancedFilter.isActive
+                ? (filteredMaterials.isEmpty
+                    ? _buildEmptyState(colors)
+                    : (_isGridView
+                        ? GridView.builder(
+                            padding: EdgeInsets.fromLTRB(
+                              context.screenPadding, 12, context.screenPadding, 40,
+                            ),
+                            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: context.responsiveValue(
+                                mobile: MediaQuery.sizeOf(context).width,
+                                tablet: 320,
+                                desktop: 360,
+                              ),
+                              mainAxisExtent: context.isMobile ? 230 : 260,
+                              crossAxisSpacing: context.isMobile ? 10 : 16,
+                              mainAxisSpacing: context.isMobile ? 10 : 16,
+                            ),
+                            itemCount: filteredMaterials.length,
+                            itemBuilder: (ctx, idx) {
+                              final mat = filteredMaterials[idx];
+                              final allSlabs = slabsByMatCode[mat.materialCode] ?? [];
+                              final matSlabs = _getDisplaySlabs(mat, allSlabs, _searchQuery);
+                              return _buildMaterialGridCard(
+                                mat: mat,
+                                slabs: matSlabs,
+                                colors: colors,
+                                isDark: isDark,
+                                onTap: () {
+                                  _showMaterialSlabsSheet(context, mat, matSlabs, colors, isDark);
+                                },
+                              );
                             },
-                          );
-                        },
-                      )
-                    : ListView.builder(
-                        padding: EdgeInsets.fromLTRB(
-                          context.screenPadding, 12, context.screenPadding, 40,
-                        ),
-                        itemCount: filteredMaterials.length,
-                        itemBuilder: (ctx, idx) {
-                          final mat = filteredMaterials[idx];
-                          final allSlabs = slabsByMatCode[mat.materialCode] ?? [];
-                          final matSlabs = _getDisplaySlabs(mat, allSlabs, _searchQuery);
-                          // Auto-expand if user is actively searching or filtering and there are few matching results
-                          final isExpanded = _expandedMaterialCode == mat.materialCode ||
-                              ((_searchQuery.isNotEmpty || _advancedFilter.isActive) && filteredMaterials.length <= 3 && _expandedMaterialCode == null);
-                          return _buildMaterialCard(
-                            mat: mat,
-                            slabs: matSlabs,
-                            isExpanded: isExpanded,
-                            colors: colors,
-                            isDark: isDark,
-                            onToggleExpand: () {
-                              setState(() {
-                                if (_expandedMaterialCode == mat.materialCode) {
-                                  _expandedMaterialCode = null;
-                                } else {
-                                  _expandedMaterialCode = mat.materialCode;
-                                }
-                              });
+                          )
+                        : ListView.builder(
+                            padding: EdgeInsets.fromLTRB(
+                              context.screenPadding, 12, context.screenPadding, 40,
+                            ),
+                            itemCount: filteredMaterials.length,
+                            itemBuilder: (ctx, idx) {
+                              final mat = filteredMaterials[idx];
+                              final allSlabs = slabsByMatCode[mat.materialCode] ?? [];
+                              final matSlabs = _getDisplaySlabs(mat, allSlabs, _searchQuery);
+                              final isExpanded = _expandedMaterialCode == mat.materialCode ||
+                                  (filteredMaterials.length <= 3 && _expandedMaterialCode == null);
+                              return _buildMaterialCard(
+                                mat: mat,
+                                slabs: matSlabs,
+                                isExpanded: isExpanded,
+                                colors: colors,
+                                isDark: isDark,
+                                onToggleExpand: () {
+                                  setState(() {
+                                    if (_expandedMaterialCode == mat.materialCode) {
+                                      _expandedMaterialCode = null;
+                                    } else {
+                                      _expandedMaterialCode = mat.materialCode;
+                                    }
+                                  });
+                                },
+                              );
                             },
-                          );
-                        },
-                      )),
+                          )))
+                : _selectedMaterial != null
+                    ? _buildHierarchyMaterialSlabView(appState, colors, isDark, slabsByMatCode)
+                    : (_selectedCategoryModel != null
+                        ? _buildHierarchyCategoryDetailView(appState, colors, isDark, slabsByMatCode)
+                        : _buildHierarchyCategoriesView(appState, colors, slabsByMatCode)),
           ),
         ],
       ),
@@ -1066,8 +1076,10 @@ class AvailableStoneScreenState extends State<AvailableStoneScreen> {
       ),
     );
 
+    final showFlatControls = _searchQuery.isNotEmpty || _advancedFilter.isActive;
+
     return Container(
-      padding: EdgeInsets.fromLTRB(hPad, 12, hPad, 10),
+      padding: EdgeInsets.fromLTRB(hPad, 10, hPad, 10),
       decoration: BoxDecoration(
         color: colors.surface,
         border: Border(bottom: BorderSide(color: colors.border)),
@@ -1075,8 +1087,9 @@ class AvailableStoneScreenState extends State<AvailableStoneScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // On mobile: search takes full width, toggle on next line if needed
-          if (isMobile) ...[  
+          if (!showFlatControls) ...[
+            searchBox,
+          ] else if (isMobile) ...[
             searchBox,
             const SizedBox(height: 8),
             Row(
@@ -1086,7 +1099,7 @@ class AvailableStoneScreenState extends State<AvailableStoneScreen> {
                 _buildViewModeToggle(colors, isDark),
               ],
             ),
-          ] else ...[  
+          ] else ...[
             Row(
               children: [
                 SizedBox(
@@ -2758,6 +2771,755 @@ class AvailableStoneScreenState extends State<AvailableStoneScreen> {
           },
         );
       },
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Hierarchy Navigation Views (Matching Data Entry 3-Level Structure)
+  // ──────────────────────────────────────────────────────────────────────────
+  Widget _buildHierarchyCategoriesView(
+    AppState appState,
+    AppColorsExtension colors,
+    Map<String, List<Slab>> slabsByMatCode,
+  ) {
+    final categories = appState.categoryModels;
+    if (categories.isEmpty) {
+      return _buildEmptyState(colors);
+    }
+
+    final width = MediaQuery.sizeOf(context).width;
+    final int crossAxisCount = width > 1300
+        ? 4
+        : width > 900
+            ? 3
+            : width > 600
+                ? 2
+                : 1;
+    final hPad = context.screenPadding;
+
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: EdgeInsets.fromLTRB(hPad, 16, hPad, 40),
+          sliver: SliverGrid(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              mainAxisExtent: 196,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (ctx, i) {
+                final cat = categories[i];
+                final catMats = appState.materialsForCategory(cat.categoryName);
+                int slabCount = 0;
+                double totalArea = 0.0;
+                for (final m in catMats) {
+                  final list = slabsByMatCode[m.materialCode] ?? const [];
+                  slabCount += list.length;
+                  totalArea += list.fold(0.0, (s, sl) => s + sl.areaSqm);
+                }
+
+                return _buildHierarchyCategoryCard(
+                  category: cat,
+                  totalSlabs: slabCount,
+                  totalAreaSqm: totalArea,
+                  colors: colors,
+                  onTap: () {
+                    setState(() {
+                      _selectedCategoryModel = cat;
+                      _selectedMaterial = null;
+                      _selectedSlabIds.clear();
+                    });
+                  },
+                );
+              },
+              childCount: categories.length,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHierarchyCategoryCard({
+    required CategoryModel category,
+    required int totalSlabs,
+    required double totalAreaSqm,
+    required AppColorsExtension colors,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        hoverColor: colors.surfaceVariant.withValues(alpha: 0.6),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: colors.border),
+                    ),
+                    child: Text(
+                      'Code: ${category.categoryCode}',
+                      style: GoogleFonts.robotoMono(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.folder_open_rounded,
+                    size: 20,
+                    color: colors.textDisabled,
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    category.categoryName,
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: colors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${category.categoryName} - ${category.categoryCode}',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: colors.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: colors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: colors.border),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.grid_on_rounded, size: 14, color: colors.textSecondary),
+                        const SizedBox(width: 6),
+                        Text(
+                          totalSlabs > 0
+                              ? '${totalAreaSqm.toStringAsFixed(0)} sqm - $totalSlabs slabs'
+                              : '0 sqm - 0 slabs',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 12,
+                      color: colors.textDisabled,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHierarchyCategoryDetailView(
+    AppState appState,
+    AppColorsExtension colors,
+    bool isDark,
+    Map<String, List<Slab>> slabsByMatCode,
+  ) {
+    final cat = _selectedCategoryModel!;
+    final relatedMaterials = appState.materialsForCategory(cat.categoryName);
+
+    int totalSlabs = 0;
+    double totalArea = 0.0;
+    for (final m in relatedMaterials) {
+      final list = slabsByMatCode[m.materialCode] ?? const [];
+      totalSlabs += list.length;
+      totalArea += list.fold(0.0, (s, sl) => s + sl.areaSqm);
+    }
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(context.screenPadding, 16, context.screenPadding, 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: colors.textPrimary),
+                onPressed: () {
+                  setState(() {
+                    _selectedCategoryModel = null;
+                    _selectedSlabIds.clear();
+                  });
+                },
+                tooltip: 'Back to Categories',
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  cat.categoryName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: context.isMobile ? 18 : 22,
+                    fontWeight: FontWeight.bold,
+                    color: colors.textPrimary,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Divider(color: colors.border, height: 1),
+          const SizedBox(height: 16),
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: colors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'CategoryHeader',
+                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: colors.textSecondary),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${cat.categoryName} - ${cat.categoryCode}',
+                  style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: colors.textPrimary),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'CategoryStock (${_currentTab.name.toUpperCase()})',
+                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: colors.textSecondary),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  totalSlabs > 0
+                      ? '${totalArea.toStringAsFixed(2)} sqm - $totalSlabs slabs'
+                      : '0 sqm - 0 slabs',
+                  style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: colors.textPrimary),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          Row(
+            children: [
+              Text(
+                'Related Materials',
+                style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: colors.textPrimary),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: colors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: colors.border),
+                ),
+                child: Text(
+                  '${relatedMaterials.length}',
+                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: colors.textSecondary),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          if (relatedMaterials.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colors.border),
+              ),
+              child: Center(
+                child: Text(
+                  'No Materials under "${cat.categoryName}"',
+                  style: GoogleFonts.inter(fontSize: 14, color: colors.textSecondary),
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: relatedMaterials.length,
+              separatorBuilder: (_, __) => Divider(color: colors.border, height: 1),
+              itemBuilder: (ctx, i) {
+                final mat = relatedMaterials[i];
+                final matSlabs = slabsByMatCode[mat.materialCode] ?? const [];
+                final double matArea = matSlabs.fold(0.0, (s, sl) => s + sl.areaSqm);
+                final tabColor = _currentTab == StoneStockTab.available
+                    ? const Color(0xFF10B981)
+                    : (_currentTab == StoneStockTab.damaged
+                        ? const Color(0xFFEA580C)
+                        : const Color(0xFF64748B));
+
+                return InkWell(
+                  onTap: () {
+                    setState(() {
+                      _selectedMaterial = mat;
+                      _selectedSlabIds.clear();
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  hoverColor: colors.surfaceVariant.withValues(alpha: 0.5),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: colors.surfaceVariant,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: colors.border),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: StoneImageWidget(
+                            material: mat,
+                            width: 44,
+                            height: 44,
+                            fit: BoxFit.cover,
+                            enablePreviewOnTap: true,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${mat.materialCode} - ${matArea.toStringAsFixed(0)}m² - ${mat.finish}',
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: colors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                '${cat.categoryName} - ${mat.name.toUpperCase()}',
+                                style: GoogleFonts.inter(fontSize: 12, color: colors.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: tabColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: tabColor.withValues(alpha: 0.3)),
+                          ),
+                          child: Text(
+                            '${matSlabs.length}',
+                            style: GoogleFonts.robotoMono(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: tabColor,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 13,
+                          color: colors.textDisabled.withValues(alpha: 0.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _cycleHierarchyMaterial(AppState appState, int delta) {
+    if (_selectedCategoryModel == null || _selectedMaterial == null) return;
+    final mats = appState.materialsForCategory(_selectedCategoryModel!.categoryName);
+    if (mats.isEmpty) return;
+    final idx = mats.indexWhere((m) => m.id == _selectedMaterial!.id);
+    if (idx == -1) return;
+    final next = (idx + delta) % mats.length;
+    setState(() {
+      _selectedMaterial = mats[next < 0 ? mats.length - 1 : next];
+      _selectedSlabIds.clear();
+    });
+  }
+
+  Widget _buildHierarchyMaterialSlabView(
+    AppState appState,
+    AppColorsExtension colors,
+    bool isDark,
+    Map<String, List<Slab>> slabsByMatCode,
+  ) {
+    final mat = appState.materialById(_selectedMaterial!.id) ??
+        appState.materialById(_selectedMaterial!.materialCode) ??
+        _selectedMaterial!;
+    final cat = _selectedCategoryModel ??
+        appState.categoryModelByName(mat.categoryId) ??
+        CategoryModel(categoryCode: mat.categoryCode, categoryName: mat.categoryId);
+    final slabs = slabsByMatCode[mat.materialCode] ?? const <Slab>[];
+    final totalTabArea = slabs.fold(0.0, (s, sl) => s + sl.areaSqm);
+
+    final allMatSlabs = appState.slabsForMaterial(mat.materialCode);
+    final availCount = allMatSlabs.where((s) => s.status == SlabStatus.available).length;
+    final unavailCount = allMatSlabs.where((s) => s.status == SlabStatus.unavailable).length;
+    final damagedCount = allMatSlabs.where((s) => s.status == SlabStatus.damaged).length;
+
+    final allSelected = slabs.isNotEmpty && slabs.every((s) => _selectedSlabIds.contains(s.id));
+    final someSelected = slabs.any((s) => _selectedSlabIds.contains(s.id));
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(context.screenPadding, 16, context.screenPadding, 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top Breadcrumb & Prev/Next Bar
+          Row(
+            children: [
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _selectedMaterial = null;
+                    _selectedSlabIds.clear();
+                  });
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: colors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: colors.border),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: colors.textSecondary),
+                      const SizedBox(width: 4),
+                      Text(
+                        cat.categoryName,
+                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: colors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: colors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: colors.primary.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${mat.materialCode} - ${mat.name.toUpperCase()}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: colors.primary),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedMaterial = null;
+                            _selectedSlabIds.clear();
+                          });
+                        },
+                        child: Icon(Icons.close, size: 16, color: colors.primary),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.chevron_left_rounded, size: 20),
+                tooltip: 'Previous Material',
+                onPressed: () => _cycleHierarchyMaterial(appState, -1),
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right_rounded, size: 20),
+                tooltip: 'Next Material',
+                onPressed: () => _cycleHierarchyMaterial(appState, 1),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Material Detail Summary Card
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: colors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if ((mat.imageUrl?.isNotEmpty ?? false) || mat.imageBytes != null) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: context.isMobile ? 160 : 210,
+                      child: StoneImageWidget(
+                        material: mat,
+                        fit: BoxFit.cover,
+                        enablePreviewOnTap: true,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                ],
+                Text(
+                  mat.name.toUpperCase(),
+                  style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: colors.textPrimary),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${mat.materialCode} · ${mat.finish} · ${mat.stoneType}',
+                  style: GoogleFonts.inter(fontSize: 13, color: colors.textSecondary),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '${totalTabArea.toStringAsFixed(2)} sqm • ${slabs.length} ${_currentTab.name} slabs',
+                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: colors.textPrimary),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    _buildSlabStatusPill(Icons.check_circle_rounded, 'Available: $availCount', const Color(0xFF10B981)),
+                    _buildSlabStatusPill(Icons.cancel_rounded, 'Unavailable: $unavailCount', const Color(0xFF64748B)),
+                    _buildSlabStatusPill(Icons.broken_image_rounded, 'Damaged: $damagedCount', const Color(0xFFEA580C)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Slabs Action & Select-All Header
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            alignment: WrapAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Slabs',
+                    style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: colors.textPrimary),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: colors.border),
+                    ),
+                    child: Text(
+                      '${slabs.length}',
+                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: colors.textSecondary),
+                    ),
+                  ),
+                  if (slabs.isNotEmpty) ...[
+                    const SizedBox(width: 12),
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          if (allSelected) {
+                            for (final s in slabs) {
+                              _selectedSlabIds.remove(s.id);
+                            }
+                          } else {
+                            for (final s in slabs) {
+                              _selectedSlabIds.add(s.id);
+                            }
+                          }
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(6),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Checkbox(
+                            value: allSelected ? true : (someSelected ? null : false),
+                            tristate: true,
+                            activeColor: colors.primary,
+                            onChanged: (_) {
+                              setState(() {
+                                if (allSelected) {
+                                  for (final s in slabs) {
+                                    _selectedSlabIds.remove(s.id);
+                                  }
+                                } else {
+                                  for (final s in slabs) {
+                                    _selectedSlabIds.add(s.id);
+                                  }
+                                }
+                              });
+                            },
+                          ),
+                          Text(
+                            'Select All',
+                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: colors.textPrimary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              if (slabs.isNotEmpty)
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.bookmark_add_rounded, size: 15),
+                  label: Text(
+                    'Reserve',
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF59E0B),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () {
+                    final selectedInMat = slabs.where((s) => _selectedSlabIds.contains(s.id)).toList();
+                    ReservationsFormDialog.show(
+                      context,
+                      preselectedSlabs: selectedInMat.isNotEmpty ? selectedInMat : slabs,
+                    );
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          if (slabs.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colors.border),
+              ),
+              child: Center(
+                child: Text(
+                  'No ${_currentTab.name} slabs for ${mat.name}',
+                  style: GoogleFonts.inter(fontSize: 14, color: colors.textSecondary),
+                ),
+              ),
+            )
+          else
+            Container(
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colors.border),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: slabs.length,
+                separatorBuilder: (_, __) => Divider(color: colors.border, height: 1),
+                itemBuilder: (ctx, idx) => _buildSlabItemRow(slabs[idx], colors, isDark),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSlabStatusPill(IconData icon, String label, Color accentColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: accentColor.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: accentColor),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: accentColor),
+          ),
+        ],
+      ),
     );
   }
 

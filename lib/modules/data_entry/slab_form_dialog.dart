@@ -76,12 +76,9 @@ class _SlabFormDialogState extends State<SlabFormDialog> {
   SlabStatus _selectedStatus = SlabStatus.available;
 
   final List<String> _rackOptions = [
-    '',
-    'WAREHOUSE', 'SHOWROOM', 'Warehouse', 'Showroom', 'RACK-A1', 'RACK-A2', 'RACK-A3',
-    'RACK-B1', 'RACK-B2', 'RACK-B3',
-    'RACK-C1', 'RACK-C2', 'RACK-C3',
-    'RACK-D1', 'RACK-D2', 'RACK-D3',
-    'YARD-01', 'YARD-02',
+    'Showroom',
+    'Site delivery',
+    'Warehouse',
   ];
 
   static String generateUniqueInventoryId() {
@@ -115,9 +112,13 @@ class _SlabFormDialogState extends State<SlabFormDialog> {
       _notesCtrl = TextEditingController(text: slab.defectNotes ?? '');
       _batchIdCtrl = TextEditingController(text: slab.batchId ?? 'BATCH-${_selectedMaterial.materialCode}-01');
       _printLabelTextCtrl = TextEditingController(text: slab.printLabelText);
-      _selectedRackCode = slab.warehouseLocation;
-      if (!_rackOptions.contains(_selectedRackCode)) {
-        _rackOptions.insert(0, _selectedRackCode);
+      final rawRack = slab.warehouseLocation.trim().toLowerCase();
+      if (rawRack == 'showroom') {
+        _selectedRackCode = 'Showroom';
+      } else if (rawRack.contains('site') || rawRack.contains('delivery')) {
+        _selectedRackCode = 'Site delivery';
+      } else {
+        _selectedRackCode = 'Warehouse';
       }
       _receivedDate = slab.receivedDate;
       _photoBytes = slab.photoBytes ?? _selectedMaterial.imageBytes;
